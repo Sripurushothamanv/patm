@@ -1,0 +1,860 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover">
+    <title>ATM Simulator | Mobile + Cloud</title>
+    <!-- Firebase SDKs (modular v9+) -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js";
+        import { getFirestore, doc, getDoc, setDoc, updateDoc, writeBatch } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js";
+        import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-analytics.js";
+
+        const firebaseConfig = {
+            apiKey: "AlzaSyAWEkCuaMvRNUnpcBx4PSpawWXERr3F5aM",
+            authDomain: "atms-d3fa7.firebaseapp.com",
+            projectId: "atms-d3fa7",
+            storageBucket: "atms-d3fa7.firebasestorage.app",
+            messagingSenderId: "181704160358",
+            appId: "1:181704160358:web:2e97df8f182b4fb25929a7",
+            measurementId: "G-6C6JYLS56P"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const analytics = getAnalytics(app);
+        const db = getFirestore(app);
+
+        window.firestoreDB = db;
+        window.writeBatch = writeBatch;
+        window.docRef = doc;
+        window.getDocFn = getDoc;
+        window.setDocFn = setDoc;
+        window.updateDocFn = updateDoc;
+    </script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        :root {
+            --bg-gradient: linear-gradient(145deg, rgba(20, 30, 48, 0.95), rgba(8, 12, 24, 0.98));
+            --glass-bg: rgba(255, 255, 255, 0.12);
+            --glass-border: rgba(255, 255, 255, 0.25);
+            --text-light: #f0f3fa;
+            --text-muted: #b9c3db;
+            --primary-glow: #3b82f6;
+            --accent: #22c55e;
+            --danger: #ef4444;
+            --card-bg: rgba(20, 28, 40, 0.65);
+            --shadow: 0 25px 45px -12px rgba(0, 0, 0, 0.5);
+            --btn-press: scale(0.96);
+        }
+
+        body.light {
+            --bg-gradient: linear-gradient(135deg, #e2e8f0, #cbd5e6);
+            --glass-bg: rgba(255, 255, 255, 0.6);
+            --glass-border: rgba(0, 0, 0, 0.15);
+            --text-light: #1e293b;
+            --text-muted: #334155;
+            --card-bg: rgba(255, 255, 255, 0.7);
+            --shadow: 0 20px 35px -10px rgba(0, 0, 0, 0.2);
+        }
+
+        body {
+            background: var(--bg-gradient);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            padding: 16px;
+            font-family: 'Segoe UI', 'Poppins', system-ui, -apple-system, 'Inter', sans-serif;
+        }
+
+        /* ATM container – fully responsive */
+        .atm-machine {
+            width: 100%;
+            max-width: 550px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(16px);
+            border-radius: 2rem;
+            border: 1px solid var(--glass-border);
+            box-shadow: var(--shadow);
+            padding: 1.5rem 1.2rem 1.8rem;
+            transition: all 0.3s ease;
+        }
+
+        .atm-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+            gap: 10px;
+            color: var(--text-light);
+        }
+        .atm-title {
+            font-weight: 700;
+            font-size: 1.4rem;
+            letter-spacing: 1px;
+            background: linear-gradient(135deg, #fff, #a5f3fc);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+        .theme-toggle {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 2rem;
+            padding: 0.3rem 0.9rem;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 0.8rem;
+            color: var(--text-light);
+            transition: all 0.2s;
+        }
+        .theme-toggle:active { transform: var(--btn-press); }
+
+        .screen { transition: all 0.3s ease; }
+        .hidden { display: none !important; }
+
+        /* Card + animation */
+        .card-area {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 1.8rem;
+            margin: 0.5rem 0 1rem;
+        }
+        .atm-card {
+            width: 260px;
+            height: 170px;
+            background: linear-gradient(125deg, #1e2a3e, #0f1722);
+            border-radius: 1.2rem;
+            box-shadow: 0 15px 25px -10px black;
+            padding: 0.9rem;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            border: 1px solid rgba(255,255,255,0.3);
+        }
+        .card-chip {
+            width: 40px;
+            height: 32px;
+            background: radial-gradient(circle at 30% 30%, #eab308, #b45309);
+            border-radius: 8px;
+        }
+        .slide-animation {
+            animation: slideIntoATM 0.55s forwards cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        @keyframes slideIntoATM {
+            0% { transform: translateX(0) rotate(0deg); opacity: 1; }
+            100% { transform: translateX(140px) rotate(8deg) scale(0.2); opacity: 0; visibility: hidden; }
+        }
+
+        .insert-btn {
+            background: #2dd4bf;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 50px;
+            font-weight: bold;
+            font-size: 1.1rem;
+            color: #0f172a;
+            box-shadow: 0 5px 0 #0e7c6e;
+            transition: 0.05s linear;
+            cursor: pointer;
+            width: 80%;
+            max-width: 240px;
+        }
+        .insert-btn:active {
+            transform: translateY(3px);
+            box-shadow: 0 2px 0 #0e7c6e;
+        }
+
+        /* Form elements */
+        .input-group { margin-bottom: 1rem; }
+        input, select, textarea {
+            width: 100%;
+            padding: 12px 16px;
+            background: rgba(255,255,255,0.2);
+            border: 1px solid var(--glass-border);
+            border-radius: 1.8rem;
+            color: var(--text-light);
+            font-weight: 500;
+            outline: none;
+            font-size: 1rem;
+            transition: 0.2s;
+        }
+        input:focus {
+            border-color: var(--primary-glow);
+            box-shadow: 0 0 8px rgba(59,130,246,0.5);
+        }
+        button {
+            background: var(--primary-glow);
+            border: none;
+            padding: 12px 18px;
+            border-radius: 40px;
+            font-weight: 600;
+            font-size: 1rem;
+            color: white;
+            cursor: pointer;
+            transition: all 0.1s ease;
+            margin-top: 8px;
+            width: 100%;
+        }
+        button:active { transform: var(--btn-press); }
+        .btn-secondary { background: #475569; }
+        .btn-danger { background: var(--danger); }
+
+        /* Dashboard grid – 2 columns on mobile */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin: 20px 0;
+        }
+        .dashboard-grid button {
+            margin: 0;
+            padding: 12px 8px;
+            font-size: 0.9rem;
+            background: rgba(59,130,246,0.85);
+            backdrop-filter: blur(4px);
+            white-space: nowrap;
+            overflow-x: auto;
+        }
+        .info-panel {
+            background: var(--card-bg);
+            border-radius: 1.8rem;
+            padding: 1rem;
+            margin: 15px 0;
+            text-align: center;
+            color: var(--text-light);
+            font-size: 1rem;
+            word-break: break-word;
+        }
+
+        /* Modal (mobile friendly) */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8);
+            backdrop-filter: blur(10px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 16px;
+        }
+        .modal-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(24px);
+            border-radius: 2rem;
+            width: 100%;
+            max-width: 380px;
+            padding: 1.5rem;
+            border: 1px solid rgba(255,255,255,0.3);
+            color: var(--text-light);
+            max-height: 85vh;
+            overflow-y: auto;
+        }
+        .spinner {
+            border: 4px solid rgba(255,255,255,0.2);
+            border-top: 4px solid #3b82f6;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 0.8s linear infinite;
+            margin: 20px auto;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* Toast notifications */
+        .toast-notify {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #1e293b;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 50px;
+            z-index: 1200;
+            font-weight: bold;
+            font-size: 0.9rem;
+            max-width: 90%;
+            text-align: center;
+            animation: fadeUp 0.3s ease;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+        @keyframes fadeUp {
+            from { opacity: 0; bottom: 0; }
+            to { opacity: 1; bottom: 20px; }
+        }
+
+        .history-list {
+            max-height: 55vh;
+            overflow-y: auto;
+            margin-top: 12px;
+        }
+        .history-item {
+            background: rgba(0,0,0,0.25);
+            margin: 8px 0;
+            padding: 12px;
+            border-radius: 1.2rem;
+            font-size: 0.85rem;
+        }
+
+        /* Fix for buttons on small screens */
+        @media (max-width: 480px) {
+            .atm-machine { padding: 1rem; }
+            .dashboard-grid button { font-size: 0.8rem; padding: 10px 4px; white-space: normal; word-break: break-word; }
+            .atm-title { font-size: 1.2rem; }
+            .insert-btn { width: 90%; }
+        }
+    </style>
+</head>
+<body>
+<div class="atm-machine" id="atmApp">
+    <div class="atm-header">
+        <div class="atm-title">💳 ATM CLOUD</div>
+        <button class="theme-toggle" id="themeToggleBtn">🌓 Theme</button>
+    </div>
+
+    <!-- CARD INSERT SCREEN -->
+    <div id="cardScreen" class="screen">
+        <div class="card-area">
+            <div class="atm-card" id="physicalCard">
+                <div class="card-chip"></div>
+                <div>💎 PREMIUM</div>
+                <div class="card-number">••••  ••••  ••••  8899</div>
+                <div>VALID THRU 12/28</div>
+            </div>
+            <button class="insert-btn" id="insertCardBtn">💳 INSERT CARD</button>
+        </div>
+    </div>
+
+    <!-- LOGIN SCREEN -->
+    <div id="loginScreen" class="screen hidden">
+        <h3 style="color:var(--text-light); text-align:center;">🔐 ATM ACCESS</h3>
+        <div class="input-group">
+            <input type="text" id="loginAccNum" placeholder="Account Number (8-10 digits)" inputmode="numeric">
+        </div>
+        <div class="input-group">
+            <input type="password" id="loginPin" placeholder="PIN (digits only)" inputmode="numeric">
+        </div>
+        <button id="doLoginBtn">➡️ LOGIN</button>
+        <button id="showCreateAccountBtn" class="btn-secondary" style="margin-top:12px;">🆕 Create Account</button>
+    </div>
+
+    <!-- CREATE ACCOUNT SCREEN -->
+    <div id="createAccountScreen" class="screen hidden">
+        <h3 style="color:var(--text-light);">🏦 Register</h3>
+        <div class="input-group"><input type="text" id="newName" placeholder="Full Name"></div>
+        <div class="input-group"><input type="password" id="newPin" placeholder="PIN (4-6 digits)" inputmode="numeric"></div>
+        <button id="createAccountBtn">✅ Generate Account</button>
+        <button id="backToLoginFromCreate" class="btn-secondary">◀ Back</button>
+    </div>
+
+    <!-- DASHBOARD SCREEN -->
+    <div id="dashboardScreen" class="screen hidden">
+        <div class="info-panel" id="dashboardInfo">
+            <div>👤 <span id="dispName">---</span></div>
+            <div>🏦 Acc: <span id="dispAccNum">---</span></div>
+            <div>💰 Balance: ₹<span id="dispBalance">0</span></div>
+        </div>
+        <div class="dashboard-grid">
+            <button class="opBtn" data-op="deposit">💰 Deposit</button>
+            <button class="opBtn" data-op="withdraw">💸 Withdraw</button>
+            <button class="opBtn" data-op="transfer">🔄 Transfer</button>
+            <button class="opBtn" data-op="balance">📊 Balance</button>
+            <button class="opBtn" data-op="history">📜 History</button>
+            <button class="opBtn" data-op="changePin">🔑 Change PIN</button>
+            <button id="logoutBtn" class="btn-danger">🚪 Logout</button>
+        </div>
+    </div>
+</div>
+<div id="globalModal" class="modal-overlay hidden"></div>
+<div id="toastContainer"></div>
+
+<script>
+    // -------------------- GLOBALS & HELPERS --------------------
+    let currentUser = null;
+    let audioCtx = null;
+
+    // Mobile: resume AudioContext on first user touch
+    function resumeAudioOnInteraction() {
+        if (audioCtx && audioCtx.state === 'suspended') {
+            audioCtx.resume();
+        }
+    }
+    document.body.addEventListener('touchstart', resumeAudioOnInteraction, { once: true });
+    document.body.addEventListener('click', resumeAudioOnInteraction, { once: true });
+
+    function playBeep() {
+        try {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.frequency.value = 880;
+            gain.gain.value = 0.15;
+            osc.start();
+            gain.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.2);
+            osc.stop(audioCtx.currentTime + 0.2);
+        } catch(e) { console.log(e); }
+    }
+
+    function speakMessage(text) {
+        if (!window.speechSynthesis) return;
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.rate = 0.9;
+        utterance.pitch = 1.0;
+        utterance.volume = 0.8;
+        window.speechSynthesis.speak(utterance);
+    }
+
+    function showToast(msg, type = "info") {
+        const toastDiv = document.createElement('div');
+        toastDiv.className = "toast-notify";
+        toastDiv.style.backgroundColor = type === "error" ? "#dc2626" : "#10b981";
+        toastDiv.innerText = msg;
+        document.body.appendChild(toastDiv);
+        setTimeout(() => toastDiv.remove(), 2800);
+        if (type !== "error") playBeep();
+    }
+
+    function showLoader(show, callback) {
+        const modalDiv = document.getElementById('globalModal');
+        if (show) {
+            modalDiv.innerHTML = `<div class="modal-card"><div class="spinner"></div><p style="text-align:center;">Processing...</p></div>`;
+            modalDiv.classList.remove('hidden');
+        } else {
+            modalDiv.classList.add('hidden');
+            if (callback) setTimeout(callback, 50);
+        }
+    }
+
+    // -------------------- FIREBASE HELPERS --------------------
+    async function findUserByAcc(accountNumber) {
+        try {
+            const userRef = window.docRef(window.firestoreDB, "users", accountNumber);
+            const docSnap = await window.getDocFn(userRef);
+            if (docSnap.exists()) return { id: docSnap.id, ...docSnap.data() };
+            return null;
+        } catch (err) {
+            console.error(err);
+            showToast("Firebase error: " + err.message, "error");
+            return null;
+        }
+    }
+
+    async function createUserInFirestore(accountNumber, name, pin, initialBalance = 1000) {
+        const userRef = window.docRef(window.firestoreDB, "users", accountNumber);
+        const newUser = {
+            name: name,
+            pin: pin,
+            balance: initialBalance,
+            transactions: [{
+                type: "Welcome Bonus",
+                amount: initialBalance,
+                dateTime: new Date().toLocaleString(),
+                reason: "Account opening"
+            }]
+        };
+        await window.setDocFn(userRef, newUser);
+        return { accountNumber, ...newUser };
+    }
+
+    async function updateUserTransactionAndBalance(accountNumber, newBalance, newTransaction) {
+        const userRef = window.docRef(window.firestoreDB, "users", accountNumber);
+        const userSnap = await window.getDocFn(userRef);
+        if (!userSnap.exists()) throw new Error("User not found");
+        const existingData = userSnap.data();
+        const updatedTransactions = [...(existingData.transactions || []), newTransaction];
+        await window.updateDocFn(userRef, { balance: newBalance, transactions: updatedTransactions });
+    }
+
+    // -------------------- PIN VERIFICATION (for every operation) --------------------
+    function requestPinVerification(onSuccess) {
+        const modalDiv = document.getElementById('globalModal');
+        modalDiv.innerHTML = `
+            <div class="modal-card">
+                <h3>🔒 VERIFY PIN</h3>
+                <input type="password" id="pinVerifyInput" placeholder="Enter your PIN" autocomplete="off" inputmode="numeric" style="margin:15px 0;">
+                <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                    <button id="pinSubmitBtn" style="flex:1;">Confirm</button>
+                    <button id="pinCancelBtn" style="flex:1; background:#475569;">Cancel</button>
+                </div>
+            </div>`;
+        modalDiv.classList.remove('hidden');
+        const input = document.getElementById('pinVerifyInput');
+        const submit = document.getElementById('pinSubmitBtn');
+        const cancel = document.getElementById('pinCancelBtn');
+        const handler = () => {
+            if (input.value === currentUser.pin) {
+                modalDiv.classList.add('hidden');
+                onSuccess();
+            } else {
+                showToast("❌ Wrong PIN! Access denied.", "error");
+                speakMessage("Wrong PIN, access denied.");
+                modalDiv.classList.add('hidden');
+            }
+        };
+        submit.onclick = handler;
+        cancel.onclick = () => modalDiv.classList.add('hidden');
+        input.addEventListener('keypress', (e) => { if (e.key === 'Enter') handler(); });
+        input.focus();
+    }
+
+    // -------------------- OPERATIONS --------------------
+    async function depositFlow() {
+        requestPinVerification(async () => {
+            showLoader(true);
+            await new Promise(r => setTimeout(r, 200));
+            showLoader(false, () => {
+                const modal = document.getElementById('globalModal');
+                modal.innerHTML = `
+                    <div class="modal-card">
+                        <h3>💰 Deposit Amount</h3>
+                        <input type="number" id="depositAmount" placeholder="Integer amount only" step="1" min="1" inputmode="numeric">
+                        <div style="display:flex; gap:10px; margin-top:20px;">
+                            <button id="confirmDeposit">Deposit</button>
+                            <button id="cancelDeposit" style="background:#475569;">Cancel</button>
+                        </div>
+                    </div>`;
+                modal.classList.remove('hidden');
+                document.getElementById('confirmDeposit').onclick = async () => {
+                    let amount = parseInt(document.getElementById('depositAmount').value);
+                    if (isNaN(amount) || amount <= 0 || !Number.isInteger(amount)) {
+                        showToast("Invalid: Positive integer only", "error");
+                        return;
+                    }
+                    showLoader(true);
+                    try {
+                        const newBalance = currentUser.balance + amount;
+                        const transaction = {
+                            type: "Deposit",
+                            amount: amount,
+                            dateTime: new Date().toLocaleString(),
+                            reason: `Cash deposit ₹${amount}`
+                        };
+                        await updateUserTransactionAndBalance(currentUser.accountNumber, newBalance, transaction);
+                        currentUser.balance = newBalance;
+                        currentUser.transactions = [...(currentUser.transactions || []), transaction];
+                        updateDashboardUI();
+                        showToast(`✅ Deposited ₹${amount}`, "success");
+                        speakMessage(`Deposit of ${amount} rupees successful. New balance ${currentUser.balance}`);
+                        modal.classList.add('hidden');
+                    } catch (err) { showToast("Error: " + err.message, "error"); }
+                    finally { showLoader(false); }
+                };
+                document.getElementById('cancelDeposit').onclick = () => modal.classList.add('hidden');
+            });
+        });
+    }
+
+    async function withdrawFlow() {
+        requestPinVerification(async () => {
+            showLoader(true);
+            await new Promise(r => setTimeout(r, 200));
+            showLoader(false, () => {
+                const modal = document.getElementById('globalModal');
+                modal.innerHTML = `
+                    <div class="modal-card">
+                        <h3>💸 Withdraw Amount</h3>
+                        <input type="number" id="withdrawAmount" placeholder="Integer amount" step="1" min="1" inputmode="numeric">
+                        <div style="display:flex; gap:10px; margin-top:20px;">
+                            <button id="confirmWithdraw">Withdraw</button>
+                            <button id="cancelWithdraw" style="background:#475569;">Cancel</button>
+                        </div>
+                    </div>`;
+                modal.classList.remove('hidden');
+                document.getElementById('confirmWithdraw').onclick = async () => {
+                    let amount = parseInt(document.getElementById('withdrawAmount').value);
+                    if (isNaN(amount) || amount <= 0 || !Number.isInteger(amount)) {
+                        showToast("Invalid amount", "error");
+                        return;
+                    }
+                    if (amount > currentUser.balance) {
+                        showToast("❌ Insufficient balance!", "error");
+                        speakMessage("Insufficient balance");
+                        modal.classList.add('hidden');
+                        return;
+                    }
+                    showLoader(true);
+                    try {
+                        const newBalance = currentUser.balance - amount;
+                        const transaction = {
+                            type: "Withdrawal",
+                            amount: amount,
+                            dateTime: new Date().toLocaleString(),
+                            reason: `ATM withdrawal ₹${amount}`
+                        };
+                        await updateUserTransactionAndBalance(currentUser.accountNumber, newBalance, transaction);
+                        currentUser.balance = newBalance;
+                        currentUser.transactions.push(transaction);
+                        updateDashboardUI();
+                        showToast(`✅ Withdrew ₹${amount}`, "success");
+                        speakMessage(`Withdrawal of ${amount} rupees successful`);
+                        modal.classList.add('hidden');
+                    } catch (err) { showToast("Error: " + err.message, "error"); }
+                    finally { showLoader(false); }
+                };
+                document.getElementById('cancelWithdraw').onclick = () => modal.classList.add('hidden');
+            });
+        });
+    }
+
+    async function transferFlow() {
+        requestPinVerification(async () => {
+            showLoader(true);
+            await new Promise(r => setTimeout(r, 200));
+            showLoader(false, () => {
+                const modal = document.getElementById('globalModal');
+                modal.innerHTML = `
+                    <div class="modal-card">
+                        <h3>🔄 Fund Transfer</h3>
+                        <input type="text" id="receiverAcc" placeholder="Receiver Account Number" inputmode="numeric">
+                        <input type="number" id="transferAmount" placeholder="Amount (Integer)" step="1" min="1" style="margin-top:10px;" inputmode="numeric">
+                        <input type="text" id="transferReason" placeholder="Reason (mandatory)" style="margin-top:10px;">
+                        <div style="display:flex; gap:10px; margin-top:20px;">
+                            <button id="confirmTransfer">Transfer</button>
+                            <button id="cancelTransfer" style="background:#475569;">Cancel</button>
+                        </div>
+                    </div>`;
+                modal.classList.remove('hidden');
+                document.getElementById('confirmTransfer').onclick = async () => {
+                    const receiverAcc = document.getElementById('receiverAcc').value.trim();
+                    const amount = parseInt(document.getElementById('transferAmount').value);
+                    const reason = document.getElementById('transferReason').value.trim();
+                    if (!receiverAcc || isNaN(amount) || amount <= 0 || !Number.isInteger(amount)) {
+                        showToast("Invalid amount or account", "error"); return;
+                    }
+                    if (!reason) { showToast("Reason mandatory", "error"); return; }
+                    if (amount > currentUser.balance) {
+                        showToast("Insufficient balance", "error");
+                        speakMessage("Insufficient balance");
+                        return;
+                    }
+                    showLoader(true);
+                    try {
+                        const receiver = await findUserByAcc(receiverAcc);
+                        if (!receiver) { showToast("Receiver not found", "error"); return; }
+                        if (receiver.accountNumber === currentUser.accountNumber) { showToast("Self transfer not allowed", "error"); return; }
+                        const newSenderBalance = currentUser.balance - amount;
+                        const newReceiverBalance = receiver.balance + amount;
+                        const senderTx = { type: "Transfer Out", amount, dateTime: new Date().toLocaleString(), reason: `To ${receiverAcc}: ${reason}`, related: receiverAcc };
+                        const receiverTx = { type: "Transfer In", amount, dateTime: new Date().toLocaleString(), reason: `From ${currentUser.accountNumber}: ${reason}`, related: currentUser.accountNumber };
+                        const batch = window.writeBatch(window.firestoreDB);
+                        const senderRef = window.docRef(window.firestoreDB, "users", currentUser.accountNumber);
+                        const receiverRef = window.docRef(window.firestoreDB, "users", receiverAcc);
+                        const senderSnap = await window.getDocFn(senderRef);
+                        const receiverSnap = await window.getDocFn(receiverRef);
+                        const senderTxArray = [...(senderSnap.data().transactions || []), senderTx];
+                        const receiverTxArray = [...(receiverSnap.data().transactions || []), receiverTx];
+                        batch.update(senderRef, { balance: newSenderBalance, transactions: senderTxArray });
+                        batch.update(receiverRef, { balance: newReceiverBalance, transactions: receiverTxArray });
+                        await batch.commit();
+                        currentUser.balance = newSenderBalance;
+                        currentUser.transactions.push(senderTx);
+                        updateDashboardUI();
+                        showToast(`✅ Transferred ₹${amount}`, "success");
+                        speakMessage(`Transfer of ${amount} rupees successful`);
+                        modal.classList.add('hidden');
+                    } catch (err) { showToast("Transfer failed", "error"); }
+                    finally { showLoader(false); }
+                };
+                document.getElementById('cancelTransfer').onclick = () => modal.classList.add('hidden');
+            });
+        });
+    }
+
+    async function changePinFlow() {
+        requestPinVerification(async () => {
+            const modal = document.getElementById('globalModal');
+            modal.innerHTML = `
+                <div class="modal-card">
+                    <h3>🔐 Change PIN</h3>
+                    <input type="password" id="newPin1" placeholder="New PIN (digits only)" inputmode="numeric">
+                    <input type="password" id="newPin2" placeholder="Confirm New PIN" style="margin-top:10px;" inputmode="numeric">
+                    <div style="display:flex; gap:10px; margin-top:20px;">
+                        <button id="confirmPinChange">Update</button>
+                        <button id="cancelPinChange" style="background:#475569;">Cancel</button>
+                    </div>
+                </div>`;
+            modal.classList.remove('hidden');
+            document.getElementById('confirmPinChange').onclick = async () => {
+                const newPin = document.getElementById('newPin1').value;
+                const confirmPin = document.getElementById('newPin2').value;
+                if (!newPin || !/^\d+$/.test(newPin) || newPin.length < 4) {
+                    showToast("PIN must be numeric & ≥4 digits", "error"); return;
+                }
+                if (newPin !== confirmPin) { showToast("PINs do not match", "error"); return; }
+                showLoader(true);
+                try {
+                    const userRef = window.docRef(window.firestoreDB, "users", currentUser.accountNumber);
+                    await window.updateDocFn(userRef, { pin: newPin });
+                    currentUser.pin = newPin;
+                    showToast("PIN changed successfully!", "success");
+                    speakMessage("Your PIN has been updated.");
+                    modal.classList.add('hidden');
+                } catch (err) { showToast("Error updating PIN", "error"); }
+                finally { showLoader(false); }
+            };
+            document.getElementById('cancelPinChange').onclick = () => modal.classList.add('hidden');
+        });
+    }
+
+    function showTransactionHistory() {
+        if (!currentUser) return;
+        const transactions = [...(currentUser.transactions || [])].reverse();
+        let html = `<div class="modal-card"><h3>📋 Transaction History</h3><div class="history-list">`;
+        if (transactions.length === 0) html += "<p>No transactions yet.</p>";
+        transactions.forEach(t => {
+            html += `<div class="history-item"><strong>${t.type}</strong> | ₹${t.amount}<br>📅 ${t.dateTime}<br>📝 ${t.reason || '-'}</div>`;
+        });
+        html += `</div><button id="closeHistoryBtn" style="margin-top:15px;">Close</button></div>`;
+        const modalDiv = document.getElementById('globalModal');
+        modalDiv.innerHTML = html;
+        modalDiv.classList.remove('hidden');
+        document.getElementById('closeHistoryBtn').onclick = () => modalDiv.classList.add('hidden');
+        speakMessage("Transaction history displayed");
+    }
+
+    async function checkBalance() {
+        if (!currentUser) return;
+        const fresh = await findUserByAcc(currentUser.accountNumber);
+        if (fresh) currentUser.balance = fresh.balance;
+        updateDashboardUI();
+        showToast(`💰 Balance: ₹${currentUser.balance}`, "info");
+        speakMessage(`Your current balance is ${currentUser.balance} rupees`);
+        playBeep();
+    }
+
+    function updateDashboardUI() {
+        if (currentUser && document.getElementById('dispName')) {
+            document.getElementById('dispName').innerText = currentUser.name;
+            document.getElementById('dispAccNum').innerText = currentUser.accountNumber;
+            document.getElementById('dispBalance').innerText = currentUser.balance;
+        }
+    }
+
+    // -------------------- LOGIN & ACCOUNT CREATION --------------------
+    async function attemptLogin() {
+        const acc = document.getElementById('loginAccNum').value.trim();
+        const pin = document.getElementById('loginPin').value.trim();
+        showLoader(true);
+        try {
+            const user = await findUserByAcc(acc);
+            if (user && user.pin === pin) {
+                currentUser = { accountNumber: acc, ...user };
+                speakMessage(`Welcome ${user.name}. Login successful.`);
+                showToast("✅ Login Success", "success");
+                switchScreen('dashboardScreen');
+                updateDashboardUI();
+            } else {
+                showToast("❌ Invalid Account or PIN", "error");
+                speakMessage("Invalid account number or PIN");
+            }
+        } catch (err) { showToast("Login error", "error"); }
+        finally { showLoader(false); }
+    }
+
+    async function createAccount() {
+        const name = document.getElementById('newName').value.trim();
+        const pin = document.getElementById('newPin').value.trim();
+        if (!name || !pin || !/^\d+$/.test(pin) || pin.length < 4) {
+            showToast("Name & numeric PIN (min 4 digits) required", "error");
+            return;
+        }
+        showLoader(true);
+        try {
+            let newAccNum = "";
+            let unique = false;
+            while (!unique) {
+                let len = Math.floor(Math.random() * 3) + 8;
+                newAccNum = "";
+                for (let i = 0; i < len; i++) newAccNum += Math.floor(Math.random() * 10);
+                const existing = await findUserByAcc(newAccNum);
+                if (!existing) unique = true;
+            }
+            await createUserInFirestore(newAccNum, name, pin, 1000);
+            showToast(`🎉 Account created! Acc: ${newAccNum}`, "success");
+            speakMessage(`Account created. Your account number is ${newAccNum}.`);
+            switchScreen('loginScreen');
+            document.getElementById('loginAccNum').value = newAccNum;
+            document.getElementById('loginPin').value = '';
+        } catch (err) { showToast("Creation failed", "error"); }
+        finally { showLoader(false); }
+    }
+
+    function switchScreen(screenId) {
+        document.getElementById('cardScreen').classList.add('hidden');
+        document.getElementById('loginScreen').classList.add('hidden');
+        document.getElementById('createAccountScreen').classList.add('hidden');
+        document.getElementById('dashboardScreen').classList.add('hidden');
+        document.getElementById(screenId).classList.remove('hidden');
+    }
+
+    function logout() {
+        currentUser = null;
+        switchScreen('cardScreen');
+        speakMessage("Logged out. Please insert card.");
+        showToast("Logged out securely", "info");
+        const cardDiv = document.getElementById('physicalCard');
+        cardDiv.classList.remove('slide-animation');
+        cardDiv.style.opacity = '1';
+        cardDiv.style.visibility = 'visible';
+        cardDiv.classList.remove('hidden');
+    }
+
+    function insertCardAnimation() {
+        const cardEl = document.getElementById('physicalCard');
+        cardEl.classList.add('slide-animation');
+        playBeep();
+        speakMessage("Card inserted. Please login.");
+        setTimeout(() => {
+            cardEl.classList.add('hidden');
+            switchScreen('loginScreen');
+        }, 550);
+    }
+
+    // -------------------- EVENT LISTENERS --------------------
+    document.addEventListener('DOMContentLoaded', () => {
+        document.getElementById('themeToggleBtn').onclick = () => document.body.classList.toggle('light');
+        document.getElementById('insertCardBtn').onclick = insertCardAnimation;
+        document.getElementById('doLoginBtn').onclick = attemptLogin;
+        document.getElementById('showCreateAccountBtn').onclick = () => switchScreen('createAccountScreen');
+        document.getElementById('createAccountBtn').onclick = createAccount;
+        document.getElementById('backToLoginFromCreate').onclick = () => switchScreen('loginScreen');
+        document.getElementById('logoutBtn')?.addEventListener('click', logout);
+        document.querySelectorAll('.opBtn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                if (!currentUser) { showToast("Session expired", "error"); logout(); return; }
+                const op = btn.getAttribute('data-op');
+                if (op === 'deposit') depositFlow();
+                else if (op === 'withdraw') withdrawFlow();
+                else if (op === 'transfer') transferFlow();
+                else if (op === 'balance') checkBalance();
+                else if (op === 'history') showTransactionHistory();
+                else if (op === 'changePin') changePinFlow();
+                playBeep();
+            });
+        });
+        speakMessage("Welcome to ATM. Please insert your card.");
+        switchScreen('cardScreen');
+    });
+</script>
+</body>
+</html>
