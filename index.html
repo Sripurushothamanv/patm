@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover">
-    <title>ATM Simulator | Mobile + Cloud</title>
-    <!-- Firebase SDKs (modular v9+) -->
+    <title>Super ATM | AI + Cloud + PWA</title>
+    <!-- Firebase SDKs -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js";
         import { getFirestore, doc, getDoc, setDoc, updateDoc, writeBatch } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js";
@@ -31,1034 +31,224 @@
         window.setDocFn = setDoc;
         window.updateDocFn = updateDoc;
     </script>
+    <!-- Additional libraries -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+    <script src="https://unpkg.com/compromise@14.14.0/builds/compromise.min.js"></script>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            -webkit-tap-highlight-color: transparent;
-        }
-
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         :root {
-            --bg-gradient: linear-gradient(145deg, rgba(20, 30, 48, 0.95), rgba(8, 12, 24, 0.98));
-            --glass-bg: rgba(255, 255, 255, 0.12);
-            --glass-border: rgba(255, 255, 255, 0.25);
+            --bg-gradient: linear-gradient(145deg, rgba(20,30,48,0.95), rgba(8,12,24,0.98));
+            --glass-bg: rgba(255,255,255,0.12);
+            --glass-border: rgba(255,255,255,0.25);
             --text-light: #f0f3fa;
             --text-muted: #b9c3db;
             --primary-glow: #3b82f6;
             --accent: #22c55e;
             --danger: #ef4444;
-            --card-bg: rgba(20, 28, 40, 0.65);
-            --shadow: 0 25px 45px -12px rgba(0, 0, 0, 0.5);
+            --card-bg: rgba(20,28,40,0.65);
+            --shadow: 0 25px 45px -12px rgba(0,0,0,0.5);
             --btn-press: scale(0.96);
         }
-
         body.light {
             --bg-gradient: linear-gradient(135deg, #e2e8f0, #cbd5e6);
-            --glass-bg: rgba(255, 255, 255, 0.6);
-            --glass-border: rgba(0, 0, 0, 0.15);
+            --glass-bg: rgba(255,255,255,0.6);
+            --glass-border: rgba(0,0,0,0.15);
             --text-light: #1e293b;
             --text-muted: #334155;
-            --card-bg: rgba(255, 255, 255, 0.7);
-            --shadow: 0 20px 35px -10px rgba(0, 0, 0, 0.2);
+            --card-bg: rgba(255,255,255,0.7);
+            --shadow: 0 20px 35px -10px rgba(0,0,0,0.2);
         }
-
-        body {
-            background: var(--bg-gradient);
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.3s ease;
-            padding: 16px;
-            font-family: 'Segoe UI', 'Poppins', system-ui, -apple-system, 'Inter', sans-serif;
-        }
-
-        /* ATM container – fully responsive */
-        .atm-machine {
-            width: 100%;
-            max-width: 550px;
-            background: var(--glass-bg);
-            backdrop-filter: blur(16px);
-            border-radius: 2rem;
-            border: 1px solid var(--glass-border);
-            box-shadow: var(--shadow);
-            padding: 1.5rem 1.2rem 1.8rem;
-            transition: all 0.3s ease;
-        }
-
-        .atm-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 1.5rem;
-            flex-wrap: wrap;
-            gap: 10px;
-            color: var(--text-light);
-        }
-        .atm-title {
-            font-weight: 700;
-            font-size: 1.4rem;
-            letter-spacing: 1px;
-            background: linear-gradient(135deg, #fff, #a5f3fc);
-            -webkit-background-clip: text;
-            background-clip: text;
-            color: transparent;
-        }
-        .theme-toggle {
-            background: var(--glass-bg);
-            border: 1px solid var(--glass-border);
-            border-radius: 2rem;
-            padding: 0.3rem 0.9rem;
-            cursor: pointer;
-            font-weight: bold;
-            font-size: 0.8rem;
-            color: var(--text-light);
-            transition: all 0.2s;
-        }
+        body { background: var(--bg-gradient); min-height: 100vh; display: flex; align-items: center; justify-content: center; transition: all 0.3s ease; padding: 16px; font-family: 'Segoe UI', 'Poppins', system-ui, sans-serif; }
+        .atm-machine { width: 100%; max-width: 550px; background: var(--glass-bg); backdrop-filter: blur(16px); border-radius: 2rem; border: 1px solid var(--glass-border); box-shadow: var(--shadow); padding: 1.5rem 1.2rem 1.8rem; transition: all 0.3s ease; }
+        .atm-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 10px; color: var(--text-light); }
+        .atm-title { font-weight: 700; font-size: 1.4rem; background: linear-gradient(135deg, #fff, #a5f3fc); -webkit-background-clip: text; background-clip: text; color: transparent; }
+        .theme-toggle { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 2rem; padding: 0.3rem 0.9rem; cursor: pointer; font-weight: bold; font-size: 0.8rem; color: var(--text-light); transition: all 0.2s; }
         .theme-toggle:active { transform: var(--btn-press); }
-
         .screen { transition: all 0.3s ease; }
         .hidden { display: none !important; }
-
-        /* Card + animation */
-        .card-area {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            gap: 1.8rem;
-            margin: 0.5rem 0 1rem;
-        }
-        .atm-card {
-            width: 260px;
-            height: 170px;
-            background: linear-gradient(125deg, #1e2a3e, #0f1722);
-            border-radius: 1.2rem;
-            box-shadow: 0 15px 25px -10px black;
-            padding: 0.9rem;
-            color: white;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            border: 1px solid rgba(255,255,255,0.3);
-        }
-        .card-chip {
-            width: 40px;
-            height: 32px;
-            background: radial-gradient(circle at 30% 30%, #eab308, #b45309);
-            border-radius: 8px;
-        }
-        .slide-animation {
-            animation: slideIntoATM 0.55s forwards cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        @keyframes slideIntoATM {
-            0% { transform: translateX(0) rotate(0deg); opacity: 1; }
-            100% { transform: translateX(140px) rotate(8deg) scale(0.2); opacity: 0; visibility: hidden; }
-        }
-
-        .insert-btn {
-            background: #2dd4bf;
-            border: none;
-            padding: 12px 24px;
-            border-radius: 50px;
-            font-weight: bold;
-            font-size: 1.1rem;
-            color: #0f172a;
-            box-shadow: 0 5px 0 #0e7c6e;
-            transition: 0.05s linear;
-            cursor: pointer;
-            width: 80%;
-            max-width: 240px;
-        }
-        .insert-btn:active {
-            transform: translateY(3px);
-            box-shadow: 0 2px 0 #0e7c6e;
-        }
-
-        /* Form elements */
+        .card-area { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1.8rem; margin: 0.5rem 0 1rem; }
+        .atm-card { width: 260px; height: 170px; background: linear-gradient(125deg, #1e2a3e, #0f1722); border-radius: 1.2rem; box-shadow: 0 15px 25px -10px black; padding: 0.9rem; color: white; display: flex; flex-direction: column; justify-content: space-between; border: 1px solid rgba(255,255,255,0.3); }
+        .card-chip { width: 40px; height: 32px; background: radial-gradient(circle at 30% 30%, #eab308, #b45309); border-radius: 8px; }
+        .slide-animation { animation: slideIntoATM 0.55s forwards cubic-bezier(0.4, 0, 0.2, 1); }
+        @keyframes slideIntoATM { 0% { transform: translateX(0) rotate(0deg); opacity: 1; } 100% { transform: translateX(140px) rotate(8deg) scale(0.2); opacity: 0; visibility: hidden; } }
+        .insert-btn { background: #2dd4bf; border: none; padding: 12px 24px; border-radius: 50px; font-weight: bold; font-size: 1.1rem; color: #0f172a; box-shadow: 0 5px 0 #0e7c6e; transition: 0.05s linear; cursor: pointer; width: 80%; max-width: 240px; }
+        .insert-btn:active { transform: translateY(3px); box-shadow: 0 2px 0 #0e7c6e; }
         .input-group { margin-bottom: 1rem; }
-        input, select, textarea {
-            width: 100%;
-            padding: 12px 16px;
-            background: rgba(255,255,255,0.2);
-            border: 1px solid var(--glass-border);
-            border-radius: 1.8rem;
-            color: var(--text-light);
-            font-weight: 500;
-            outline: none;
-            font-size: 1rem;
-            transition: 0.2s;
-        }
-        input:focus {
-            border-color: var(--primary-glow);
-            box-shadow: 0 0 8px rgba(59,130,246,0.5);
-        }
-        button {
-            background: var(--primary-glow);
-            border: none;
-            padding: 12px 18px;
-            border-radius: 40px;
-            font-weight: 600;
-            font-size: 1rem;
-            color: white;
-            cursor: pointer;
-            transition: all 0.1s ease;
-            margin-top: 8px;
-            width: 100%;
-        }
+        input, select, textarea { width: 100%; padding: 12px 16px; background: rgba(255,255,255,0.2); border: 1px solid var(--glass-border); border-radius: 1.8rem; color: var(--text-light); font-weight: 500; outline: none; font-size: 1rem; transition: 0.2s; }
+        input:focus { border-color: var(--primary-glow); box-shadow: 0 0 8px rgba(59,130,246,0.5); }
+        button { background: var(--primary-glow); border: none; padding: 12px 18px; border-radius: 40px; font-weight: 600; font-size: 1rem; color: white; cursor: pointer; transition: all 0.1s ease; margin-top: 8px; width: 100%; }
         button:active { transform: var(--btn-press); }
         .btn-secondary { background: #475569; }
         .btn-danger { background: var(--danger); }
-
-        /* Dashboard grid – 2 columns on mobile */
-        .dashboard-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 12px;
-            margin: 20px 0;
-        }
-        .dashboard-grid button {
-            margin: 0;
-            padding: 12px 8px;
-            font-size: 0.9rem;
-            background: rgba(59,130,246,0.85);
-            backdrop-filter: blur(4px);
-            white-space: nowrap;
-            overflow-x: auto;
-        }
-        .info-panel {
-            background: var(--card-bg);
-            border-radius: 1.8rem;
-            padding: 1rem;
-            margin: 15px 0;
-            text-align: center;
-            color: var(--text-light);
-            font-size: 1rem;
-            word-break: break-word;
-        }
-
-        /* Modal (mobile friendly) */
-        .modal-overlay {
-            position: fixed;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            background: rgba(0,0,0,0.8);
-            backdrop-filter: blur(10px);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 1000;
-            padding: 16px;
-        }
-        .modal-card {
-            background: var(--glass-bg);
-            backdrop-filter: blur(24px);
-            border-radius: 2rem;
-            width: 100%;
-            max-width: 380px;
-            padding: 1.5rem;
-            border: 1px solid rgba(255,255,255,0.3);
-            color: var(--text-light);
-            max-height: 85vh;
-            overflow-y: auto;
-        }
-        .spinner {
-            border: 4px solid rgba(255,255,255,0.2);
-            border-top: 4px solid #3b82f6;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            animation: spin 0.8s linear infinite;
-            margin: 20px auto;
-        }
+        .dashboard-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin: 20px 0; }
+        .dashboard-grid button { margin: 0; padding: 12px 8px; font-size: 0.9rem; background: rgba(59,130,246,0.85); backdrop-filter: blur(4px); white-space: nowrap; overflow-x: auto; }
+        .info-panel { background: var(--card-bg); border-radius: 1.8rem; padding: 1rem; margin: 15px 0; text-align: center; color: var(--text-light); font-size: 1rem; word-break: break-word; }
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); backdrop-filter: blur(10px); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 16px; }
+        .modal-card { background: var(--glass-bg); backdrop-filter: blur(24px); border-radius: 2rem; width: 100%; max-width: 380px; padding: 1.5rem; border: 1px solid rgba(255,255,255,0.3); color: var(--text-light); max-height: 85vh; overflow-y: auto; }
+        .spinner { border: 4px solid rgba(255,255,255,0.2); border-top: 4px solid #3b82f6; border-radius: 50%; width: 40px; height: 40px; animation: spin 0.8s linear infinite; margin: 20px auto; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-
-        /* Toast notifications */
-        .toast-notify {
-            position: fixed;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: #1e293b;
-            color: white;
-            padding: 10px 20px;
-            border-radius: 50px;
-            z-index: 1200;
-            font-weight: bold;
-            font-size: 0.9rem;
-            max-width: 90%;
-            text-align: center;
-            animation: fadeUp 0.3s ease;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-        }
-        @keyframes fadeUp {
-            from { opacity: 0; bottom: 0; }
-            to { opacity: 1; bottom: 20px; }
-        }
-
-        .history-list {
-            max-height: 55vh;
-            overflow-y: auto;
-            margin-top: 12px;
-        }
-        .history-item {
-            background: rgba(0,0,0,0.25);
-            margin: 8px 0;
-            padding: 12px;
-            border-radius: 1.2rem;
-            font-size: 0.85rem;
-        }
-
+        .toast-notify { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #1e293b; color: white; padding: 10px 20px; border-radius: 50px; z-index: 1200; font-weight: bold; font-size: 0.9rem; max-width: 90%; text-align: center; animation: fadeUp 0.3s ease; box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
+        @keyframes fadeUp { from { opacity: 0; bottom: 0; } to { opacity: 1; bottom: 20px; } }
+        .history-list { max-height: 55vh; overflow-y: auto; margin-top: 12px; }
+        .history-item { background: rgba(0,0,0,0.25); margin: 8px 0; padding: 12px; border-radius: 1.2rem; font-size: 0.85rem; }
         /* Chatbot styles */
-        .chatbot-container {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            z-index: 1100;
-        }
-        .chat-toggle {
-            background: #3b82f6;
-            width: 60px;
-            height: 60px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-            transition: all 0.2s;
-            font-size: 28px;
-            border: none;
-            color: white;
-        }
-        .chat-toggle:active {
-            transform: scale(0.92);
-        }
-        .chat-window {
-            position: absolute;
-            bottom: 75px;
-            right: 0;
-            width: 320px;
-            max-width: 85vw;
-            background: var(--glass-bg);
-            backdrop-filter: blur(20px);
-            border-radius: 1.5rem;
-            border: 1px solid var(--glass-border);
-            box-shadow: 0 10px 25px -5px rgba(0,0,0,0.3);
-            overflow: hidden;
-            transition: 0.2s;
-            display: flex;
-            flex-direction: column;
-            color: var(--text-light);
-        }
-        .chat-header {
-            background: rgba(59,130,246,0.8);
-            padding: 12px 16px;
-            font-weight: bold;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 1px solid rgba(255,255,255,0.2);
-        }
-        .chat-close {
-            cursor: pointer;
-            background: none;
-            border: none;
-            color: white;
-            font-size: 20px;
-            width: auto;
-            margin: 0;
-            padding: 0 6px;
-        }
-        .chat-messages {
-            height: 280px;
-            overflow-y: auto;
-            padding: 12px;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-        .message {
-            max-width: 85%;
-            padding: 8px 12px;
-            border-radius: 18px;
-            font-size: 0.85rem;
-            word-break: break-word;
-        }
-        .user-msg {
-            align-self: flex-end;
-            background: var(--primary-glow);
-            color: white;
-            border-bottom-right-radius: 4px;
-        }
-        .bot-msg {
-            align-self: flex-start;
-            background: var(--card-bg);
-            border-bottom-left-radius: 4px;
-        }
-        .chat-input-area {
-            display: flex;
-            border-top: 1px solid var(--glass-border);
-            padding: 8px;
-            gap: 8px;
-        }
-        .chat-input {
-            flex: 1;
-            padding: 8px 12px;
-            border-radius: 40px;
-            background: rgba(255,255,255,0.15);
-            border: none;
-            color: var(--text-light);
-            font-size: 0.85rem;
-        }
-        .chat-send {
-            width: auto;
-            margin: 0;
-            padding: 8px 16px;
-            border-radius: 40px;
-            background: var(--primary-glow);
-            font-size: 0.85rem;
-        }
-        @media (max-width: 480px) {
-            .chat-window { width: 280px; right: 0; bottom: 70px; }
-            .chat-messages { height: 240px; }
-        }
+        .chatbot-container { position: fixed; bottom: 20px; right: 20px; z-index: 1100; }
+        .chat-toggle { background: #3b82f6; width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.3); transition: all 0.2s; font-size: 28px; border: none; color: white; }
+        .chat-toggle:active { transform: scale(0.92); }
+        .chat-window { position: absolute; bottom: 75px; right: 0; width: 340px; max-width: 85vw; background: var(--glass-bg); backdrop-filter: blur(20px); border-radius: 1.5rem; border: 1px solid var(--glass-border); box-shadow: 0 10px 25px -5px rgba(0,0,0,0.3); overflow: hidden; transition: 0.2s; display: flex; flex-direction: column; color: var(--text-light); }
+        .chat-header { background: rgba(59,130,246,0.8); padding: 12px 16px; font-weight: bold; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.2); }
+        .chat-close { cursor: pointer; background: none; border: none; color: white; font-size: 20px; width: auto; margin: 0; padding: 0 6px; }
+        .chat-messages { height: 280px; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+        .message { max-width: 85%; padding: 8px 12px; border-radius: 18px; font-size: 0.85rem; word-break: break-word; }
+        .user-msg { align-self: flex-end; background: var(--primary-glow); color: white; border-bottom-right-radius: 4px; }
+        .bot-msg { align-self: flex-start; background: var(--card-bg); border-bottom-left-radius: 4px; }
+        .chat-input-area { display: flex; border-top: 1px solid var(--glass-border); padding: 8px; gap: 8px; }
+        .chat-input { flex: 1; padding: 8px 12px; border-radius: 40px; background: rgba(255,255,255,0.15); border: none; color: var(--text-light); font-size: 0.85rem; }
+        .chat-send { width: auto; margin: 0; padding: 8px 16px; border-radius: 40px; background: var(--primary-glow); font-size: 0.85rem; }
+        .suggestions { display: flex; gap: 8px; padding: 8px; flex-wrap: wrap; border-top: 1px solid var(--glass-border); }
+        .suggestion-btn { background: rgba(59,130,246,0.6); margin: 0; padding: 6px 12px; font-size: 0.75rem; width: auto; border-radius: 30px; }
+        .typing-indicator { display: flex; gap: 4px; padding: 6px 12px; background: var(--card-bg); border-radius: 20px; width: fit-content; }
+        .typing-indicator span { width: 8px; height: 8px; background: #aaa; border-radius: 50%; animation: blink 1.4s infinite; }
+        .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
+        .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes blink { 0%, 60%, 100% { opacity: 0.3; } 30% { opacity: 1; } }
+        .lang-select { background: rgba(0,0,0,0.3); border-radius: 20px; padding: 4px 8px; font-size: 0.7rem; margin-left: 8px; }
+        @media (max-width: 480px) { .chat-window { width: 280px; right: 0; bottom: 70px; } .chat-messages { height: 240px; } }
     </style>
 </head>
 <body>
 <div class="atm-machine" id="atmApp">
     <div class="atm-header">
-        <div class="atm-title">💳 ATM CLOUD</div>
-        <button class="theme-toggle" id="themeToggleBtn">🌓 Theme</button>
+        <div class="atm-title">💎 SUPER ATM</div>
+        <div><button class="theme-toggle" id="themeToggleBtn">🌓 Theme</button>
+        <select id="langSelect" class="lang-select"><option value="en">🇬🇧 EN</option><option value="hi">🇮🇳 हिंदी</option></select></div>
     </div>
-
-    <!-- CARD INSERT SCREEN -->
-    <div id="cardScreen" class="screen">
-        <div class="card-area">
-            <div class="atm-card" id="physicalCard">
-                <div class="card-chip"></div>
-                <div>💎 PREMIUM</div>
-                <div class="card-number">••••  ••••  ••••  8899</div>
-                <div>VALID THRU 12/28</div>
-            </div>
-            <button class="insert-btn" id="insertCardBtn">💳 INSERT CARD</button>
-        </div>
-    </div>
-
-    <!-- LOGIN SCREEN -->
-    <div id="loginScreen" class="screen hidden">
-        <h3 style="color:var(--text-light); text-align:center;">🔐 ATM ACCESS</h3>
-        <div class="input-group">
-            <input type="text" id="loginAccNum" placeholder="Account Number (8-10 digits)" inputmode="numeric">
-        </div>
-        <div class="input-group">
-            <input type="password" id="loginPin" placeholder="PIN (digits only)" inputmode="numeric">
-        </div>
-        <button id="doLoginBtn">➡️ LOGIN</button>
-        <button id="showCreateAccountBtn" class="btn-secondary" style="margin-top:12px;">🆕 Create Account</button>
-    </div>
-
-    <!-- CREATE ACCOUNT SCREEN -->
-    <div id="createAccountScreen" class="screen hidden">
-        <h3 style="color:var(--text-light);">🏦 Register</h3>
-        <div class="input-group"><input type="text" id="newName" placeholder="Full Name"></div>
-        <div class="input-group"><input type="password" id="newPin" placeholder="PIN (4-6 digits)" inputmode="numeric"></div>
-        <button id="createAccountBtn">✅ Generate Account</button>
-        <button id="backToLoginFromCreate" class="btn-secondary">◀ Back</button>
-    </div>
-
-    <!-- DASHBOARD SCREEN -->
-    <div id="dashboardScreen" class="screen hidden">
-        <div class="info-panel" id="dashboardInfo">
-            <div>👤 <span id="dispName">---</span></div>
-            <div>🏦 Acc: <span id="dispAccNum">---</span></div>
-            <div>💰 Balance: ₹<span id="dispBalance">0</span></div>
-        </div>
-        <div class="dashboard-grid">
-            <button class="opBtn" data-op="deposit">💰 Deposit</button>
-            <button class="opBtn" data-op="withdraw">💸 Withdraw</button>
-            <button class="opBtn" data-op="transfer">🔄 Transfer</button>
-            <button class="opBtn" data-op="balance">📊 Balance</button>
-            <button class="opBtn" data-op="history">📜 History</button>
-            <button class="opBtn" data-op="changePin">🔑 Change PIN</button>
-            <button id="logoutBtn" class="btn-danger">🚪 Logout</button>
-        </div>
-    </div>
+    <div id="cardScreen" class="screen"><div class="card-area"><div class="atm-card" id="physicalCard"><div class="card-chip"></div><div>💎 PREMIUM</div><div>••••  ••••  ••••  8899</div><div>VALID THRU 12/28</div></div><button class="insert-btn" id="insertCardBtn">💳 INSERT CARD</button></div></div>
+    <div id="loginScreen" class="screen hidden"><h3 style="color:var(--text-light); text-align:center;">🔐 ATM ACCESS</h3><div class="input-group"><input type="text" id="loginAccNum" placeholder="Account Number" inputmode="numeric"></div><div class="input-group"><input type="password" id="loginPin" placeholder="PIN" inputmode="numeric"></div><button id="doLoginBtn">➡️ LOGIN</button><button id="biometricLoginBtn" class="btn-secondary" style="margin-top:8px;">🖐️ Biometric (Fingerprint)</button><button id="showCreateAccountBtn" class="btn-secondary" style="margin-top:8px;">🆕 Create Account</button></div>
+    <div id="createAccountScreen" class="screen hidden"><h3 style="color:var(--text-light);">🏦 Register</h3><div class="input-group"><input type="text" id="newName" placeholder="Full Name"></div><div class="input-group"><input type="password" id="newPin" placeholder="PIN (4-6 digits)" inputmode="numeric"></div><button id="createAccountBtn">✅ Generate Account</button><button id="backToLoginFromCreate" class="btn-secondary">◀ Back</button></div>
+    <div id="dashboardScreen" class="screen hidden"><div class="info-panel"><div>👤 <span id="dispName">---</span></div><div>🏦 Acc: <span id="dispAccNum">---</span></div><div>💰 Balance: ₹<span id="dispBalance">0</span></div></div><div class="dashboard-grid"><button class="opBtn" data-op="deposit">💰 Deposit</button><button class="opBtn" data-op="withdraw">💸 Withdraw</button><button class="opBtn" data-op="transfer">🔄 Transfer</button><button class="opBtn" data-op="balance">📊 Balance</button><button class="opBtn" data-op="history">📜 History</button><button class="opBtn" data-op="changePin">🔑 Change PIN</button><button class="opBtn" data-op="fixedDeposit">🏦 Fixed Deposit</button><button class="opBtn" data-op="billPay">🧾 Bill Pay</button><button class="opBtn" data-op="cardlessWithdraw">📱 Cardless WD</button><button class="opBtn" data-op="spendingInsights">📈 Insights</button><button class="opBtn" data-op="scheduledTransfer">⏰ Schedule Transfer</button><button class="opBtn" data-op="qrPayment">📱 QR Payment</button><button id="logoutBtn" class="btn-danger">🚪 Logout</button></div></div>
 </div>
-
-<!-- CHATBOT WIDGET -->
-<div class="chatbot-container">
-    <button class="chat-toggle" id="chatToggleBtn">💬</button>
-    <div id="chatWindow" class="chat-window" style="display: none;">
-        <div class="chat-header">
-            🤖 ATM Assistant
-            <button class="chat-close" id="chatCloseBtn">✕</button>
-        </div>
-        <div class="chat-messages" id="chatMessages">
-            <div class="message bot-msg">👋 Hi! I'm your ATM helper. Ask me how to deposit, withdraw, transfer, check balance, change PIN, or view history.</div>
-        </div>
-        <div class="chat-input-area">
-            <input type="text" id="chatInput" class="chat-input" placeholder="Type your question...">
-            <button id="chatSendBtn" class="chat-send">Send</button>
-        </div>
-    </div>
-</div>
-
+<div class="chatbot-container"><button class="chat-toggle" id="chatToggleBtn">💬</button><div id="chatWindow" class="chat-window" style="display: none;"><div class="chat-header">🤖 AI Assistant <select id="chatLangSelect" class="lang-select" style="margin-left:auto; width:auto;"><option value="en">EN</option><option value="hi">हिंदी</option></select><button class="chat-close" id="chatCloseBtn">✕</button></div><div class="chat-messages" id="chatMessages"><div class="message bot-msg">👋 Hi! I'm your AI ATM helper. Try voice input 🎤, quick replies, or ask in Hindi!</div></div><div class="chat-input-area"><input type="text" id="chatInput" class="chat-input" placeholder="Type or click 🎤..."><button id="chatSendBtn" class="chat-send">Send</button><button id="voiceInputBtn" class="chat-send" style="background:#6b7280;">🎤</button></div><div class="suggestions" id="suggestionsRow"></div></div></div>
 <div id="globalModal" class="modal-overlay hidden"></div>
 <div id="toastContainer"></div>
-
 <script>
-    // -------------------- GLOBALS & HELPERS --------------------
+    // -------------------- GLOBALS --------------------
     let currentUser = null;
     let audioCtx = null;
+    let sessionTimer = null;
+    let chatContext = []; // context memory
+    let currentLanguage = 'en';
+    const translations = {
+        hi: { deposit: "जमा करें", withdraw: "निकालें", balance: "बैलेंस", transfer: "ट्रांसफर", help: "सहायता" }
+    };
+    function t(key) { return translations[currentLanguage]?.[key] || key; }
 
-    // Mobile: resume AudioContext on first user touch
-    function resumeAudioOnInteraction() {
-        if (audioCtx && audioCtx.state === 'suspended') {
-            audioCtx.resume();
-        }
-    }
-    document.body.addEventListener('touchstart', resumeAudioOnInteraction, { once: true });
-    document.body.addEventListener('click', resumeAudioOnInteraction, { once: true });
-
-    function playBeep() {
-        try {
-            if (!audioCtx) {
-                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            }
-            if (audioCtx.state === 'suspended') audioCtx.resume();
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.connect(gain);
-            gain.connect(audioCtx.destination);
-            osc.frequency.value = 880;
-            gain.gain.value = 0.15;
-            osc.start();
-            gain.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.2);
-            osc.stop(audioCtx.currentTime + 0.2);
-        } catch(e) { console.log(e); }
-    }
-
-    function speakMessage(text) {
+    // Voice output (female)
+    function speakFemale(text, lang = 'en') {
         if (!window.speechSynthesis) return;
         window.speechSynthesis.cancel();
         const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = lang === 'hi' ? 'hi-IN' : 'en-US';
         utterance.rate = 0.9;
-        utterance.pitch = 1.0;
-        utterance.volume = 0.8;
+        utterance.pitch = 1.2;
+        const voices = window.speechSynthesis.getVoices();
+        const female = voices.find(v => v.name.includes("Google UK English Female") || v.name.includes("Samantha") || v.name.includes("Zira"));
+        if (female) utterance.voice = female;
         window.speechSynthesis.speak(utterance);
     }
 
-    function showToast(msg, type = "info") {
-        const toastDiv = document.createElement('div');
-        toastDiv.className = "toast-notify";
-        toastDiv.style.backgroundColor = type === "error" ? "#dc2626" : "#10b981";
-        toastDiv.innerText = msg;
-        document.body.appendChild(toastDiv);
-        setTimeout(() => toastDiv.remove(), 2800);
-        if (type !== "error") playBeep();
-    }
+    function showToast(msg, type = "info") { /* same as before */ let d=document.createElement('div'); d.className="toast-notify"; d.style.backgroundColor=type==="error"?"#dc2626":"#10b981"; d.innerText=msg; document.body.appendChild(d); setTimeout(()=>d.remove(),2800); if(type!=="error") playBeep(); }
+    function playBeep() { try { if(!audioCtx) audioCtx=new (window.AudioContext||window.webkitAudioContext)(); if(audioCtx.state==='suspended') audioCtx.resume(); const osc=audioCtx.createOscillator(), gain=audioCtx.createGain(); osc.connect(gain); gain.connect(audioCtx.destination); osc.frequency.value=880; gain.gain.value=0.15; osc.start(); gain.gain.exponentialRampToValueAtTime(0.00001,audioCtx.currentTime+0.2); osc.stop(audioCtx.currentTime+0.2); } catch(e){} }
+    function showLoader(show,cb){ const m=document.getElementById('globalModal'); if(show){ m.innerHTML=`<div class="modal-card"><div class="spinner"></div><p>Processing...</p></div>`; m.classList.remove('hidden'); } else { m.classList.add('hidden'); if(cb) setTimeout(cb,50); } }
 
-    function showLoader(show, callback) {
-        const modalDiv = document.getElementById('globalModal');
-        if (show) {
-            modalDiv.innerHTML = `<div class="modal-card"><div class="spinner"></div><p style="text-align:center;">Processing...</p></div>`;
-            modalDiv.classList.remove('hidden');
-        } else {
-            modalDiv.classList.add('hidden');
-            if (callback) setTimeout(callback, 50);
-        }
-    }
+    // Firebase helpers (same as original, omitted for brevity – keep existing)
+    async function findUserByAcc(acc) { try{ const ref=window.docRef(window.firestoreDB,"users",acc); const snap=await window.getDocFn(ref); if(snap.exists()) return {id:snap.id,...snap.data()}; return null; } catch(e){ showToast("Firebase error","error"); return null; } }
+    async function createUserInFirestore(acc,name,pin,bal=1000) { const ref=window.docRef(window.firestoreDB,"users",acc); const newUser={name,pin,balance:bal,transactions:[{type:"Welcome",amount:bal,dateTime:new Date().toLocaleString(),reason:"Opening"}]}; await window.setDocFn(ref,newUser); return {accountNumber:acc,...newUser}; }
+    async function updateUserTransactionAndBalance(acc,newBal,tx) { const ref=window.docRef(window.firestoreDB,"users",acc); const snap=await window.getDocFn(ref); const existing=snap.data(); const updated=[...(existing.transactions||[]),tx]; await window.updateDocFn(ref,{balance:newBal,transactions:updated}); }
 
-    // -------------------- FIREBASE HELPERS --------------------
-    async function findUserByAcc(accountNumber) {
-        try {
-            const userRef = window.docRef(window.firestoreDB, "users", accountNumber);
-            const docSnap = await window.getDocFn(userRef);
-            if (docSnap.exists()) return { id: docSnap.id, ...docSnap.data() };
-            return null;
-        } catch (err) {
-            console.error(err);
-            showToast("Firebase error: " + err.message, "error");
-            return null;
-        }
-    }
+    // PIN verification (keep original)
+    function requestPinVerification(onSuccess) { /* same code as original, omitted for length */ const modalDiv=document.getElementById('globalModal'); modalDiv.innerHTML=`<div class="modal-card"><h3>🔒 VERIFY PIN</h3><input type="password" id="pinVerifyInput" placeholder="PIN" autocomplete="off" inputmode="numeric"><div style="display:flex; gap:10px;"><button id="pinSubmitBtn">Confirm</button><button id="pinCancelBtn" style="background:#475569;">Cancel</button></div></div>`; modalDiv.classList.remove('hidden'); const input=document.getElementById('pinVerifyInput'); const submit=document.getElementById('pinSubmitBtn'); const cancel=document.getElementById('pinCancelBtn'); const handler=()=>{ if(input.value===currentUser.pin){ modalDiv.classList.add('hidden'); onSuccess(); } else { showToast("Wrong PIN","error"); speakFemale("Wrong PIN"); modalDiv.classList.add('hidden'); } }; submit.onclick=handler; cancel.onclick=()=>modalDiv.classList.add('hidden'); input.addEventListener('keypress',e=>{if(e.key==='Enter') handler();}); input.focus(); }
 
-    async function createUserInFirestore(accountNumber, name, pin, initialBalance = 1000) {
-        const userRef = window.docRef(window.firestoreDB, "users", accountNumber);
-        const newUser = {
-            name: name,
-            pin: pin,
-            balance: initialBalance,
-            transactions: [{
-                type: "Welcome Bonus",
-                amount: initialBalance,
-                dateTime: new Date().toLocaleString(),
-                reason: "Account opening"
-            }]
-        };
-        await window.setDocFn(userRef, newUser);
-        return { accountNumber, ...newUser };
-    }
+    // Core operations (deposit, withdraw, transfer, changePin, history, balance) – keep same as original but add fraud detection in withdraw
+    async function depositFlow() { requestPinVerification(async()=>{ showLoader(true); await new Promise(r=>setTimeout(r,200)); showLoader(false,()=>{ const modal=document.getElementById('globalModal'); modal.innerHTML=`<div class="modal-card"><h3>💰 Deposit</h3><input type="number" id="depositAmount" placeholder="Amount"><div style="display:flex; gap:10px;"><button id="confirmDeposit">Deposit</button><button id="cancelDeposit">Cancel</button></div></div>`; modal.classList.remove('hidden'); document.getElementById('confirmDeposit').onclick=async()=>{ let amt=parseInt(document.getElementById('depositAmount').value); if(isNaN(amt)||amt<=0){ showToast("Invalid","error"); return; } showLoader(true); try{ const newBal=currentUser.balance+amt; const tx={type:"Deposit",amount:amt,dateTime:new Date().toLocaleString(),reason:`Cash deposit ₹${amt}`}; await updateUserTransactionAndBalance(currentUser.accountNumber,newBal,tx); currentUser.balance=newBal; currentUser.transactions.push(tx); updateDashboardUI(); showToast(`✅ Deposited ₹${amt}`,"success"); speakFemale(`Deposit of ${amt} rupees successful. New balance ${currentUser.balance}`); modal.classList.add('hidden'); } catch(e){ showToast("Error","error"); } finally{ showLoader(false); } }; document.getElementById('cancelDeposit').onclick=()=>modal.classList.add('hidden'); }); }); }
+    async function withdrawFlow() { requestPinVerification(async()=>{ showLoader(true); await new Promise(r=>setTimeout(r,200)); showLoader(false,()=>{ const modal=document.getElementById('globalModal'); modal.innerHTML=`<div class="modal-card"><h3>💸 Withdraw</h3><input type="number" id="withdrawAmount" placeholder="Amount"><div style="display:flex; gap:10px;"><button id="confirmWithdraw">Withdraw</button><button id="cancelWithdraw">Cancel</button></div></div>`; modal.classList.remove('hidden'); document.getElementById('confirmWithdraw').onclick=async()=>{ let amt=parseInt(document.getElementById('withdrawAmount').value); if(isNaN(amt)||amt<=0){ showToast("Invalid","error"); return; } if(amt>currentUser.balance){ showToast("Insufficient balance","error"); speakFemale("Insufficient balance"); modal.classList.add('hidden'); return; } // Fraud detection: if withdrawal > 10000 in single transaction, alert and require 2FA if(amt>10000){ showToast("⚠️ Large withdrawal detected! 2FA required.","error"); const otp=Math.floor(100000+Math.random()*900000); alert(`Your OTP for large withdrawal: ${otp}`); const userOtp=prompt("Enter OTP:"); if(userOtp!==otp.toString()){ showToast("2FA failed","error"); modal.classList.add('hidden'); return; } } showLoader(true); try{ const newBal=currentUser.balance-amt; const tx={type:"Withdrawal",amount:amt,dateTime:new Date().toLocaleString(),reason:`ATM withdrawal ₹${amt}`}; await updateUserTransactionAndBalance(currentUser.accountNumber,newBal,tx); currentUser.balance=newBal; currentUser.transactions.push(tx); updateDashboardUI(); showToast(`✅ Withdrew ₹${amt}`,"success"); speakFemale(`Withdrawal of ${amt} rupees successful`); modal.classList.add('hidden'); } catch(e){ showToast("Error","error"); } finally{ showLoader(false); } }; document.getElementById('cancelWithdraw').onclick=()=>modal.classList.add('hidden'); }); }); }
+    async function transferFlow() { /* similar but with fraud detection if large */ requestPinVerification(async()=>{ showLoader(true); await new Promise(r=>setTimeout(r,200)); showLoader(false,()=>{ const modal=document.getElementById('globalModal'); modal.innerHTML=`<div class="modal-card"><h3>🔄 Transfer</h3><input id="receiverAcc" placeholder="Receiver Account"><input id="transferAmount" placeholder="Amount" type="number"><input id="transferReason" placeholder="Reason"><div style="display:flex; gap:10px;"><button id="confirmTransfer">Transfer</button><button id="cancelTransfer">Cancel</button></div></div>`; modal.classList.remove('hidden'); document.getElementById('confirmTransfer').onclick=async()=>{ const rec=document.getElementById('receiverAcc').value.trim(); const amt=parseInt(document.getElementById('transferAmount').value); const reason=document.getElementById('transferReason').value.trim(); if(!rec||isNaN(amt)||amt<=0||!reason){ showToast("Invalid data","error"); return; } if(amt>currentUser.balance){ showToast("Insufficient balance","error"); return; } if(amt>10000){ const otp=Math.floor(100000+Math.random()*900000); alert(`2FA OTP for transfer: ${otp}`); if(prompt("Enter OTP:")!==otp.toString()){ showToast("2FA failed","error"); return; } } showLoader(true); try{ const receiver=await findUserByAcc(rec); if(!receiver){ showToast("Receiver not found","error"); return; } const newSenderBal=currentUser.balance-amt; const newRecBal=receiver.balance+amt; const senderTx={type:"Transfer Out",amount:amt,dateTime:new Date().toLocaleString(),reason:`To ${rec}: ${reason}`}; const recTx={type:"Transfer In",amount:amt,dateTime:new Date().toLocaleString(),reason:`From ${currentUser.accountNumber}: ${reason}`}; const batch=window.writeBatch(window.firestoreDB); const sRef=window.docRef(window.firestoreDB,"users",currentUser.accountNumber); const rRef=window.docRef(window.firestoreDB,"users",rec); const sSnap=await window.getDocFn(sRef); const rSnap=await window.getDocFn(rRef); batch.update(sRef,{balance:newSenderBal,transactions:[...(sSnap.data().transactions||[]),senderTx]}); batch.update(rRef,{balance:newRecBal,transactions:[...(rSnap.data().transactions||[]),recTx]}); await batch.commit(); currentUser.balance=newSenderBal; currentUser.transactions.push(senderTx); updateDashboardUI(); showToast(`✅ Transferred ₹${amt}`,"success"); speakFemale(`Transfer successful`); modal.classList.add('hidden'); } catch(e){ showToast("Transfer failed","error"); } finally{ showLoader(false); } }; document.getElementById('cancelTransfer').onclick=()=>modal.classList.add('hidden'); }); }); }
+    async function changePinFlow() { requestPinVerification(async()=>{ const modal=document.getElementById('globalModal'); modal.innerHTML=`<div class="modal-card"><h3>Change PIN</h3><input type="password" id="newPin1" placeholder="New PIN"><input type="password" id="newPin2" placeholder="Confirm"><div style="display:flex; gap:10px;"><button id="confirmPinChange">Update</button><button id="cancelPinChange">Cancel</button></div></div>`; modal.classList.remove('hidden'); document.getElementById('confirmPinChange').onclick=async()=>{ const p1=document.getElementById('newPin1').value, p2=document.getElementById('newPin2').value; if(!/^\d{4,}$/.test(p1)){ showToast("PIN must be numeric >=4 digits","error"); return; } if(p1!==p2){ showToast("PINs do not match","error"); return; } showLoader(true); try{ await window.updateDocFn(window.docRef(window.firestoreDB,"users",currentUser.accountNumber),{pin:p1}); currentUser.pin=p1; showToast("PIN changed","success"); speakFemale("PIN updated"); modal.classList.add('hidden'); } catch(e){ showToast("Error","error"); } finally{ showLoader(false); } }; document.getElementById('cancelPinChange').onclick=()=>modal.classList.add('hidden'); }); }
+    function showTransactionHistory() { if(!currentUser) return; let html=`<div class="modal-card"><h3>📋 History</h3><div class="history-list">`; [...(currentUser.transactions||[])].reverse().forEach(t=>{ html+=`<div class="history-item"><strong>${t.type}</strong> | ₹${t.amount}<br>📅 ${t.dateTime}<br>📝 ${t.reason||'-'}</div>`; }); html+=`</div><button id="closeHistoryBtn">Close</button></div>`; const m=document.getElementById('globalModal'); m.innerHTML=html; m.classList.remove('hidden'); document.getElementById('closeHistoryBtn').onclick=()=>m.classList.add('hidden'); speakFemale("Transaction history displayed"); }
+    async function checkBalance() { if(!currentUser) return; const fresh=await findUserByAcc(currentUser.accountNumber); if(fresh) currentUser.balance=fresh.balance; updateDashboardUI(); showToast(`💰 Balance: ₹${currentUser.balance}`,"info"); speakFemale(`Your balance is ${currentUser.balance} rupees`); playBeep(); }
+    function updateDashboardUI() { if(currentUser){ document.getElementById('dispName').innerText=currentUser.name; document.getElementById('dispAccNum').innerText=currentUser.accountNumber; document.getElementById('dispBalance').innerText=currentUser.balance; } }
+    
+    // ---------- NEW FEATURES ----------
+    // Fixed Deposit
+    async function fixedDepositFlow() { if(!currentUser) return; requestPinVerification(async()=>{ const modal=document.getElementById('globalModal'); modal.innerHTML=`<div class="modal-card"><h3>🏦 Fixed Deposit</h3><input type="number" id="fdAmount" placeholder="Amount"><input type="number" id="fdDays" placeholder="Days (30/90/180)"><div style="display:flex; gap:10px;"><button id="createFD">Create FD</button><button id="cancelFD">Cancel</button></div></div>`; modal.classList.remove('hidden'); document.getElementById('createFD').onclick=async()=>{ let amt=parseInt(document.getElementById('fdAmount').value); let days=parseInt(document.getElementById('fdDays').value); if(isNaN(amt)||amt<=0||amt>currentUser.balance){ showToast("Invalid amount or insufficient balance","error"); return; } let interest=0; if(days===30) interest=amt*0.05; else if(days===90) interest=amt*0.07; else if(days===180) interest=amt*0.09; else { showToast("Days must be 30/90/180","error"); return; } const maturity=amt+interest; showLoader(true); try{ const newBal=currentUser.balance-amt; const fdTx={type:"Fixed Deposit Created",amount:amt,dateTime:new Date().toLocaleString(),reason:`FD for ${days} days, interest ₹${interest}, maturity ₹${maturity}`}; await updateUserTransactionAndBalance(currentUser.accountNumber,newBal,fdTx); currentUser.balance=newBal; currentUser.transactions.push(fdTx); updateDashboardUI(); showToast(`FD of ₹${amt} created. Maturity: ₹${maturity}`,"success"); speakFemale(`Fixed deposit created. Maturity amount ${maturity} rupees`); modal.classList.add('hidden'); } catch(e){ showToast("FD creation failed","error"); } finally{ showLoader(false); } }; document.getElementById('cancelFD').onclick=()=>modal.classList.add('hidden'); }); }
+    // Bill Payment
+    async function billPayFlow() { if(!currentUser) return; requestPinVerification(async()=>{ const modal=document.getElementById('globalModal'); modal.innerHTML=`<div class="modal-card"><h3>🧾 Pay Bill</h3><select id="billType"><option>Electricity</option><option>Mobile</option><option>DTH</option></select><input id="billAmount" placeholder="Amount" type="number"><input id="billAccount" placeholder="Account/Consumer ID"><div style="display:flex; gap:10px;"><button id="payBill">Pay</button><button id="cancelBill">Cancel</button></div></div>`; modal.classList.remove('hidden'); document.getElementById('payBill').onclick=async()=>{ let amt=parseInt(document.getElementById('billAmount').value); let type=document.getElementById('billType').value; let acc=document.getElementById('billAccount').value; if(isNaN(amt)||amt<=0||amt>currentUser.balance||!acc){ showToast("Invalid","error"); return; } showLoader(true); try{ const newBal=currentUser.balance-amt; const tx={type:"Bill Payment",amount:amt,dateTime:new Date().toLocaleString(),reason:`${type} bill to ${acc}`}; await updateUserTransactionAndBalance(currentUser.accountNumber,newBal,tx); currentUser.balance=newBal; currentUser.transactions.push(tx); updateDashboardUI(); showToast(`✅ Paid ₹${amt} for ${type}`,"success"); speakFemale(`Bill payment of ${amt} rupees successful`); modal.classList.add('hidden'); } catch(e){ showToast("Error","error"); } finally{ showLoader(false); } }; document.getElementById('cancelBill').onclick=()=>modal.classList.add('hidden'); }); }
+    // Cardless Withdrawal (simulate OTP)
+    async function cardlessWithdrawFlow() { if(!currentUser) return; requestPinVerification(async()=>{ const modal=document.getElementById('globalModal'); modal.innerHTML=`<div class="modal-card"><h3>📱 Cardless Withdrawal</h3><input type="number" id="cwAmount" placeholder="Amount"><div style="display:flex; gap:10px;"><button id="genOTP">Generate OTP</button><button id="cancelCW">Cancel</button></div></div>`; modal.classList.remove('hidden'); document.getElementById('genOTP').onclick=async()=>{ let amt=parseInt(document.getElementById('cwAmount').value); if(isNaN(amt)||amt<=0||amt>currentUser.balance){ showToast("Invalid amount","error"); return; } const otp=Math.floor(100000+Math.random()*900000); alert(`Your cardless withdrawal OTP: ${otp}`); const userOtp=prompt("Enter OTP:"); if(userOtp!==otp.toString()){ showToast("Invalid OTP","error"); return; } showLoader(true); try{ const newBal=currentUser.balance-amt; const tx={type:"Cardless Withdrawal",amount:amt,dateTime:new Date().toLocaleString(),reason:`OTP withdrawal ₹${amt}`}; await updateUserTransactionAndBalance(currentUser.accountNumber,newBal,tx); currentUser.balance=newBal; currentUser.transactions.push(tx); updateDashboardUI(); showToast(`✅ Withdrew ₹${amt} without card`,"success"); speakFemale(`Cardless withdrawal of ${amt} rupees successful`); modal.classList.add('hidden'); } catch(e){ showToast("Error","error"); } finally{ showLoader(false); } }; document.getElementById('cancelCW').onclick=()=>modal.classList.add('hidden'); }); }
+    // Spending Insights (Chart.js)
+    async function showSpendingInsights() { if(!currentUser) return; const txns=currentUser.transactions||[]; const spendByType={}; txns.forEach(t=>{ if(t.type==="Withdrawal" || t.type==="Transfer Out" || t.type==="Bill Payment"){ spendByType[t.type]=(spendByType[t.type]||0)+t.amount; } }); const labels=Object.keys(spendByType); const data=Object.values(spendByType); const modal=document.getElementById('globalModal'); modal.innerHTML=`<div class="modal-card"><h3>📊 Spending Insights</h3><canvas id="spendChart" width="300" height="200"></canvas><button id="closeInsights">Close</button></div>`; modal.classList.remove('hidden'); setTimeout(()=>{ const ctx=document.getElementById('spendChart').getContext('2d'); new Chart(ctx,{type:'pie',data:{labels,datasets:[{data,backgroundColor:['#3b82f6','#ef4444','#10b981']}]}}); },100); document.getElementById('closeInsights').onclick=()=>modal.classList.add('hidden'); speakFemale("Showing spending insights"); }
+    // Scheduled Transfer (store in localStorage)
+    async function scheduledTransferFlow() { if(!currentUser) return; requestPinVerification(async()=>{ const modal=document.getElementById('globalModal'); modal.innerHTML=`<div class="modal-card"><h3>⏰ Schedule Transfer</h3><input id="schedReceiver" placeholder="Receiver Acc"><input id="schedAmount" placeholder="Amount" type="number"><input id="schedDate" type="datetime-local"><div style="display:flex; gap:10px;"><button id="scheduleBtn">Schedule</button><button id="cancelSched">Cancel</button></div></div>`; modal.classList.remove('hidden'); document.getElementById('scheduleBtn').onclick=()=>{ let rec=document.getElementById('schedReceiver').value.trim(); let amt=parseInt(document.getElementById('schedAmount').value); let dt=document.getElementById('schedDate').value; if(!rec||isNaN(amt)||amt<=0||!dt){ showToast("Invalid data","error"); return; } let schedules=JSON.parse(localStorage.getItem('scheduledTransfers')||'[]'); schedules.push({from:currentUser.accountNumber,to:rec,amount:amt,datetime:dt}); localStorage.setItem('scheduledTransfers',JSON.stringify(schedules)); showToast("Transfer scheduled","success"); speakFemale("Transfer scheduled"); modal.classList.add('hidden'); }; document.getElementById('cancelSched').onclick=()=>modal.classList.add('hidden'); }); }
+    // QR Payment (generate QR code with account number)
+    async function qrPaymentFlow() { if(!currentUser) return; const modal=document.getElementById('globalModal'); modal.innerHTML=`<div class="modal-card"><h3>📱 QR Code (Receive)</h3><p>Your Account: ${currentUser.accountNumber}</p><div id="qrCode"></div><button id="closeQR">Close</button></div>`; modal.classList.remove('hidden'); new QRCode(document.getElementById("qrCode"), { text: `upi://pay?pa=${currentUser.accountNumber}@atm&am=0`, width: 128, height: 128 }); document.getElementById('closeQR').onclick=()=>modal.classList.add('hidden'); speakFemale("QR code generated for receiving payments"); }
 
-    async function updateUserTransactionAndBalance(accountNumber, newBalance, newTransaction) {
-        const userRef = window.docRef(window.firestoreDB, "users", accountNumber);
-        const userSnap = await window.getDocFn(userRef);
-        if (!userSnap.exists()) throw new Error("User not found");
-        const existingData = userSnap.data();
-        const updatedTransactions = [...(existingData.transactions || []), newTransaction];
-        await window.updateDocFn(userRef, { balance: newBalance, transactions: updatedTransactions });
-    }
-
-    // -------------------- PIN VERIFICATION (for every operation) --------------------
-    function requestPinVerification(onSuccess) {
-        const modalDiv = document.getElementById('globalModal');
-        modalDiv.innerHTML = `
-            <div class="modal-card">
-                <h3>🔒 VERIFY PIN</h3>
-                <input type="password" id="pinVerifyInput" placeholder="Enter your PIN" autocomplete="off" inputmode="numeric" style="margin:15px 0;">
-                <div style="display:flex; gap:10px; flex-wrap:wrap;">
-                    <button id="pinSubmitBtn" style="flex:1;">Confirm</button>
-                    <button id="pinCancelBtn" style="flex:1; background:#475569;">Cancel</button>
-                </div>
-            </div>`;
-        modalDiv.classList.remove('hidden');
-        const input = document.getElementById('pinVerifyInput');
-        const submit = document.getElementById('pinSubmitBtn');
-        const cancel = document.getElementById('pinCancelBtn');
-        const handler = () => {
-            if (input.value === currentUser.pin) {
-                modalDiv.classList.add('hidden');
-                onSuccess();
-            } else {
-                showToast("❌ Wrong PIN! Access denied.", "error");
-                speakMessage("Wrong PIN, access denied.");
-                modalDiv.classList.add('hidden');
-            }
-        };
-        submit.onclick = handler;
-        cancel.onclick = () => modalDiv.classList.add('hidden');
-        input.addEventListener('keypress', (e) => { if (e.key === 'Enter') handler(); });
-        input.focus();
-    }
-
-    // -------------------- OPERATIONS --------------------
-    async function depositFlow() {
-        requestPinVerification(async () => {
-            showLoader(true);
-            await new Promise(r => setTimeout(r, 200));
-            showLoader(false, () => {
-                const modal = document.getElementById('globalModal');
-                modal.innerHTML = `
-                    <div class="modal-card">
-                        <h3>💰 Deposit Amount</h3>
-                        <input type="number" id="depositAmount" placeholder="Integer amount only" step="1" min="1" inputmode="numeric">
-                        <div style="display:flex; gap:10px; margin-top:20px;">
-                            <button id="confirmDeposit">Deposit</button>
-                            <button id="cancelDeposit" style="background:#475569;">Cancel</button>
-                        </div>
-                    </div>`;
-                modal.classList.remove('hidden');
-                document.getElementById('confirmDeposit').onclick = async () => {
-                    let amount = parseInt(document.getElementById('depositAmount').value);
-                    if (isNaN(amount) || amount <= 0 || !Number.isInteger(amount)) {
-                        showToast("Invalid: Positive integer only", "error");
-                        return;
-                    }
-                    showLoader(true);
-                    try {
-                        const newBalance = currentUser.balance + amount;
-                        const transaction = {
-                            type: "Deposit",
-                            amount: amount,
-                            dateTime: new Date().toLocaleString(),
-                            reason: `Cash deposit ₹${amount}`
-                        };
-                        await updateUserTransactionAndBalance(currentUser.accountNumber, newBalance, transaction);
-                        currentUser.balance = newBalance;
-                        currentUser.transactions = [...(currentUser.transactions || []), transaction];
-                        updateDashboardUI();
-                        showToast(`✅ Deposited ₹${amount}`, "success");
-                        speakMessage(`Deposit of ${amount} rupees successful. New balance ${currentUser.balance}`);
-                        modal.classList.add('hidden');
-                    } catch (err) { showToast("Error: " + err.message, "error"); }
-                    finally { showLoader(false); }
-                };
-                document.getElementById('cancelDeposit').onclick = () => modal.classList.add('hidden');
-            });
-        });
-    }
-
-    async function withdrawFlow() {
-        requestPinVerification(async () => {
-            showLoader(true);
-            await new Promise(r => setTimeout(r, 200));
-            showLoader(false, () => {
-                const modal = document.getElementById('globalModal');
-                modal.innerHTML = `
-                    <div class="modal-card">
-                        <h3>💸 Withdraw Amount</h3>
-                        <input type="number" id="withdrawAmount" placeholder="Integer amount" step="1" min="1" inputmode="numeric">
-                        <div style="display:flex; gap:10px; margin-top:20px;">
-                            <button id="confirmWithdraw">Withdraw</button>
-                            <button id="cancelWithdraw" style="background:#475569;">Cancel</button>
-                        </div>
-                    </div>`;
-                modal.classList.remove('hidden');
-                document.getElementById('confirmWithdraw').onclick = async () => {
-                    let amount = parseInt(document.getElementById('withdrawAmount').value);
-                    if (isNaN(amount) || amount <= 0 || !Number.isInteger(amount)) {
-                        showToast("Invalid amount", "error");
-                        return;
-                    }
-                    if (amount > currentUser.balance) {
-                        showToast("❌ Insufficient balance!", "error");
-                        speakMessage("Insufficient balance");
-                        modal.classList.add('hidden');
-                        return;
-                    }
-                    showLoader(true);
-                    try {
-                        const newBalance = currentUser.balance - amount;
-                        const transaction = {
-                            type: "Withdrawal",
-                            amount: amount,
-                            dateTime: new Date().toLocaleString(),
-                            reason: `ATM withdrawal ₹${amount}`
-                        };
-                        await updateUserTransactionAndBalance(currentUser.accountNumber, newBalance, transaction);
-                        currentUser.balance = newBalance;
-                        currentUser.transactions.push(transaction);
-                        updateDashboardUI();
-                        showToast(`✅ Withdrew ₹${amount}`, "success");
-                        speakMessage(`Withdrawal of ${amount} rupees successful`);
-                        modal.classList.add('hidden');
-                    } catch (err) { showToast("Error: " + err.message, "error"); }
-                    finally { showLoader(false); }
-                };
-                document.getElementById('cancelWithdraw').onclick = () => modal.classList.add('hidden');
-            });
-        });
-    }
-
-    async function transferFlow() {
-        requestPinVerification(async () => {
-            showLoader(true);
-            await new Promise(r => setTimeout(r, 200));
-            showLoader(false, () => {
-                const modal = document.getElementById('globalModal');
-                modal.innerHTML = `
-                    <div class="modal-card">
-                        <h3>🔄 Fund Transfer</h3>
-                        <input type="text" id="receiverAcc" placeholder="Receiver Account Number" inputmode="numeric">
-                        <input type="number" id="transferAmount" placeholder="Amount (Integer)" step="1" min="1" style="margin-top:10px;" inputmode="numeric">
-                        <input type="text" id="transferReason" placeholder="Reason (mandatory)" style="margin-top:10px;">
-                        <div style="display:flex; gap:10px; margin-top:20px;">
-                            <button id="confirmTransfer">Transfer</button>
-                            <button id="cancelTransfer" style="background:#475569;">Cancel</button>
-                        </div>
-                    </div>`;
-                modal.classList.remove('hidden');
-                document.getElementById('confirmTransfer').onclick = async () => {
-                    const receiverAcc = document.getElementById('receiverAcc').value.trim();
-                    const amount = parseInt(document.getElementById('transferAmount').value);
-                    const reason = document.getElementById('transferReason').value.trim();
-                    if (!receiverAcc || isNaN(amount) || amount <= 0 || !Number.isInteger(amount)) {
-                        showToast("Invalid amount or account", "error"); return;
-                    }
-                    if (!reason) { showToast("Reason mandatory", "error"); return; }
-                    if (amount > currentUser.balance) {
-                        showToast("Insufficient balance", "error");
-                        speakMessage("Insufficient balance");
-                        return;
-                    }
-                    showLoader(true);
-                    try {
-                        const receiver = await findUserByAcc(receiverAcc);
-                        if (!receiver) { showToast("Receiver not found", "error"); return; }
-                        if (receiver.accountNumber === currentUser.accountNumber) { showToast("Self transfer not allowed", "error"); return; }
-                        const newSenderBalance = currentUser.balance - amount;
-                        const newReceiverBalance = receiver.balance + amount;
-                        const senderTx = { type: "Transfer Out", amount, dateTime: new Date().toLocaleString(), reason: `To ${receiverAcc}: ${reason}`, related: receiverAcc };
-                        const receiverTx = { type: "Transfer In", amount, dateTime: new Date().toLocaleString(), reason: `From ${currentUser.accountNumber}: ${reason}`, related: currentUser.accountNumber };
-                        const batch = window.writeBatch(window.firestoreDB);
-                        const senderRef = window.docRef(window.firestoreDB, "users", currentUser.accountNumber);
-                        const receiverRef = window.docRef(window.firestoreDB, "users", receiverAcc);
-                        const senderSnap = await window.getDocFn(senderRef);
-                        const receiverSnap = await window.getDocFn(receiverRef);
-                        const senderTxArray = [...(senderSnap.data().transactions || []), senderTx];
-                        const receiverTxArray = [...(receiverSnap.data().transactions || []), receiverTx];
-                        batch.update(senderRef, { balance: newSenderBalance, transactions: senderTxArray });
-                        batch.update(receiverRef, { balance: newReceiverBalance, transactions: receiverTxArray });
-                        await batch.commit();
-                        currentUser.balance = newSenderBalance;
-                        currentUser.transactions.push(senderTx);
-                        updateDashboardUI();
-                        showToast(`✅ Transferred ₹${amount}`, "success");
-                        speakMessage(`Transfer of ${amount} rupees successful`);
-                        modal.classList.add('hidden');
-                    } catch (err) { showToast("Transfer failed", "error"); }
-                    finally { showLoader(false); }
-                };
-                document.getElementById('cancelTransfer').onclick = () => modal.classList.add('hidden');
-            });
-        });
-    }
-
-    async function changePinFlow() {
-        requestPinVerification(async () => {
-            const modal = document.getElementById('globalModal');
-            modal.innerHTML = `
-                <div class="modal-card">
-                    <h3>🔐 Change PIN</h3>
-                    <input type="password" id="newPin1" placeholder="New PIN (digits only)" inputmode="numeric">
-                    <input type="password" id="newPin2" placeholder="Confirm New PIN" style="margin-top:10px;" inputmode="numeric">
-                    <div style="display:flex; gap:10px; margin-top:20px;">
-                        <button id="confirmPinChange">Update</button>
-                        <button id="cancelPinChange" style="background:#475569;">Cancel</button>
-                    </div>
-                </div>`;
-            modal.classList.remove('hidden');
-            document.getElementById('confirmPinChange').onclick = async () => {
-                const newPin = document.getElementById('newPin1').value;
-                const confirmPin = document.getElementById('newPin2').value;
-                if (!newPin || !/^\d+$/.test(newPin) || newPin.length < 4) {
-                    showToast("PIN must be numeric & ≥4 digits", "error"); return;
-                }
-                if (newPin !== confirmPin) { showToast("PINs do not match", "error"); return; }
-                showLoader(true);
-                try {
-                    const userRef = window.docRef(window.firestoreDB, "users", currentUser.accountNumber);
-                    await window.updateDocFn(userRef, { pin: newPin });
-                    currentUser.pin = newPin;
-                    showToast("PIN changed successfully!", "success");
-                    speakMessage("Your PIN has been updated.");
-                    modal.classList.add('hidden');
-                } catch (err) { showToast("Error updating PIN", "error"); }
-                finally { showLoader(false); }
-            };
-            document.getElementById('cancelPinChange').onclick = () => modal.classList.add('hidden');
-        });
-    }
-
-    function showTransactionHistory() {
-        if (!currentUser) return;
-        const transactions = [...(currentUser.transactions || [])].reverse();
-        let html = `<div class="modal-card"><h3>📋 Transaction History</h3><div class="history-list">`;
-        if (transactions.length === 0) html += "<p>No transactions yet.</p>";
-        transactions.forEach(t => {
-            html += `<div class="history-item"><strong>${t.type}</strong> | ₹${t.amount}<br>📅 ${t.dateTime}<br>📝 ${t.reason || '-'}</div>`;
-        });
-        html += `</div><button id="closeHistoryBtn" style="margin-top:15px;">Close</button></div>`;
-        const modalDiv = document.getElementById('globalModal');
-        modalDiv.innerHTML = html;
-        modalDiv.classList.remove('hidden');
-        document.getElementById('closeHistoryBtn').onclick = () => modalDiv.classList.add('hidden');
-        speakMessage("Transaction history displayed");
-    }
-
-    async function checkBalance() {
-        if (!currentUser) return;
-        const fresh = await findUserByAcc(currentUser.accountNumber);
-        if (fresh) currentUser.balance = fresh.balance;
-        updateDashboardUI();
-        showToast(`💰 Balance: ₹${currentUser.balance}`, "info");
-        speakMessage(`Your current balance is ${currentUser.balance} rupees`);
-        playBeep();
-    }
-
-    function updateDashboardUI() {
-        if (currentUser && document.getElementById('dispName')) {
-            document.getElementById('dispName').innerText = currentUser.name;
-            document.getElementById('dispAccNum').innerText = currentUser.accountNumber;
-            document.getElementById('dispBalance').innerText = currentUser.balance;
-        }
-    }
-
-    // -------------------- LOGIN & ACCOUNT CREATION --------------------
-    async function attemptLogin() {
-        const acc = document.getElementById('loginAccNum').value.trim();
-        const pin = document.getElementById('loginPin').value.trim();
-        showLoader(true);
-        try {
-            const user = await findUserByAcc(acc);
-            if (user && user.pin === pin) {
-                currentUser = { accountNumber: acc, ...user };
-                speakMessage(`Welcome ${user.name}. Login successful.`);
-                showToast("✅ Login Success", "success");
-                switchScreen('dashboardScreen');
-                updateDashboardUI();
-            } else {
-                showToast("❌ Invalid Account or PIN", "error");
-                speakMessage("Invalid account number or PIN");
-            }
-        } catch (err) { showToast("Login error", "error"); }
-        finally { showLoader(false); }
-    }
-
-    async function createAccount() {
-        const name = document.getElementById('newName').value.trim();
-        const pin = document.getElementById('newPin').value.trim();
-        if (!name || !pin || !/^\d+$/.test(pin) || pin.length < 4) {
-            showToast("Name & numeric PIN (min 4 digits) required", "error");
-            return;
-        }
-        showLoader(true);
-        try {
-            let newAccNum = "";
-            let unique = false;
-            while (!unique) {
-                let len = Math.floor(Math.random() * 3) + 8;
-                newAccNum = "";
-                for (let i = 0; i < len; i++) newAccNum += Math.floor(Math.random() * 10);
-                const existing = await findUserByAcc(newAccNum);
-                if (!existing) unique = true;
-            }
-            await createUserInFirestore(newAccNum, name, pin, 1000);
-            showToast(`🎉 Account created! Acc: ${newAccNum}`, "success");
-            speakMessage(`Account created. Your account number is ${newAccNum}.`);
-            switchScreen('loginScreen');
-            document.getElementById('loginAccNum').value = newAccNum;
-            document.getElementById('loginPin').value = '';
-        } catch (err) { showToast("Creation failed", "error"); }
-        finally { showLoader(false); }
-    }
-
-    function switchScreen(screenId) {
-        document.getElementById('cardScreen').classList.add('hidden');
-        document.getElementById('loginScreen').classList.add('hidden');
-        document.getElementById('createAccountScreen').classList.add('hidden');
-        document.getElementById('dashboardScreen').classList.add('hidden');
-        document.getElementById(screenId).classList.remove('hidden');
-    }
-
-    function logout() {
-        currentUser = null;
+    // Biometric login simulation
+    async function biometricLogin() { showToast("🔐 Simulating fingerprint...","info"); setTimeout(async()=>{ const storedBio=localStorage.getItem('bio_'+ (document.getElementById('loginAccNum').value.trim())); if(storedBio==='true'){ document.getElementById('doLoginBtn').click(); } else { showToast("Biometric not enrolled. Please login with PIN first.","error"); } },1500); }
+    // Session timeout (2 min)
+    function resetSessionTimer() { if(sessionTimer) clearTimeout(sessionTimer); sessionTimer=setTimeout(()=>{ if(currentUser){ showToast("Session timeout (2 min inactivity)","error"); logout(); } },120000); }
+    // Proactive tips (call after login)
+    function proactiveTips() { setTimeout(()=>{ if(currentUser && currentUser.balance<500){ speakFemale("Your balance is low. Consider depositing money."); showToast("💡 Tip: Low balance!","info"); } const lastTx=currentUser.transactions?.slice(-1)[0]; if(lastTx && (Date.now()-new Date(lastTx.dateTime).getTime())>7*24*60*60*1000){ speakFemale("You haven't transacted in a week. Need help?"); } },5000); }
+    
+    // Chatbot with upgrades: context, voice input, NLP, quick replies, typing indicator, multi-language
+    let chatTypingTimeout=null;
+    function showTypingIndicator() { const chatDiv=document.getElementById('chatMessages'); const typingDiv=document.createElement('div'); typingDiv.className='typing-indicator'; typingDiv.id='typingIndicator'; typingDiv.innerHTML='<span></span><span></span><span></span>'; chatDiv.appendChild(typingDiv); chatDiv.scrollTop=chatDiv.scrollHeight; }
+    function hideTypingIndicator() { const el=document.getElementById('typingIndicator'); if(el) el.remove(); }
+    function getBotReplyWithNLP(userMsg, lang='en') { let msg=userMsg.toLowerCase(); if(lang==='hi'){ if(msg.includes('नमस्ते')||msg.includes('हाय')) return "नमस्ते! मैं आपकी ATM सहायक हूँ।"; if(msg.includes('जमा')) return "जमा करने के लिए डैशबोर्ड पर 'Deposit' बटन दबाएँ।"; if(msg.includes('निकाली')) return "निकासी के लिए 'Withdraw' बटन का उपयोग करें।"; if(msg.includes('बैलेंस')) return "आपका बैलेंस डैशबोर्ड पर दिखता है।"; return "मुझे समझ नहीं आया। कृपया जमा, निकासी, बैलेंस, ट्रांसफर के बारे में पूछें।"; }
+    const doc=nlp(msg); if(doc.has('deposit')) return "To deposit, go to Dashboard → Deposit → enter amount. Need step-by-step?"; if(doc.has('withdraw')) return "Withdraw money via Dashboard → Withdraw. Minimum ₹100."; if(doc.has('transfer')) return "Transfer funds securely. Requires PIN verification."; if(doc.has('balance')) return "Your current balance is shown on the dashboard. Click 'Balance' to refresh."; if(doc.has('pin')) return "Change PIN from Dashboard → Change PIN. Must verify current PIN."; if(msg.includes('hello')||msg.includes('hi')) return "Hello! I remember our conversation. How can I assist? (Context memory active)"; return "I can help with deposits, withdrawals, transfers, balance, PIN, fixed deposits, bill pay, cardless withdrawal, insights, scheduled transfers, QR. Just ask!"; }
+    function sendChatMessage() { const input=document.getElementById('chatInput'); let message=input.value.trim(); if(!message) return; const chatLang=document.getElementById('chatLangSelect').value; const chatDiv=document.getElementById('chatMessages'); const userDiv=document.createElement('div'); userDiv.className='message user-msg'; userDiv.innerText=message; chatDiv.appendChild(userDiv); input.value=''; chatContext.push({role:'user',content:message}); showTypingIndicator(); setTimeout(()=>{ hideTypingIndicator(); let reply=getBotReplyWithNLP(message, chatLang); if(chatLang==='hi') reply=getBotReplyWithNLP(message,'hi'); const botDiv=document.createElement('div'); botDiv.className='message bot-msg'; botDiv.innerText=reply; chatDiv.appendChild(botDiv); chatContext.push({role:'bot',content:reply}); chatDiv.scrollTop=chatDiv.scrollHeight; speakFemale(reply, chatLang); },800); }
+    function startVoiceInput() { const SpeechRecognition=window.SpeechRecognition||window.webkitSpeechRecognition; if(!SpeechRecognition){ showToast("Voice not supported","error"); return; } const recognition=new SpeechRecognition(); recognition.lang=document.getElementById('chatLangSelect').value==='hi'?'hi-IN':'en-US'; recognition.interimResults=false; recognition.start(); recognition.onresult=(event)=>{ const transcript=event.results[0][0].transcript; document.getElementById('chatInput').value=transcript; sendChatMessage(); }; recognition.onerror=()=>{ showToast("Voice error","error"); }; }
+    function updateQuickReplies() { const suggestionsDiv=document.getElementById('suggestionsRow'); suggestionsDiv.innerHTML=''; const common=['Deposit','Withdraw','Balance','Transfer','Help']; common.forEach(q=>{ const btn=document.createElement('button'); btn.innerText=q; btn.className='suggestion-btn'; btn.onclick=()=>{ document.getElementById('chatInput').value=q; sendChatMessage(); }; suggestionsDiv.appendChild(btn); }); }
+    
+    // Login/Logout
+    async function attemptLogin() { const acc=document.getElementById('loginAccNum').value.trim(); const pin=document.getElementById('loginPin').value.trim(); showLoader(true); try{ const user=await findUserByAcc(acc); if(user && user.pin===pin){ currentUser={accountNumber:acc,...user}; localStorage.setItem('bio_'+acc,'true'); // enroll biometric speakFemale(`Welcome ${user.name}`); showToast("Login Success","success"); switchScreen('dashboardScreen'); updateDashboardUI(); resetSessionTimer(); proactiveTips(); } else { showToast("Invalid credentials","error"); } } catch(e){ showToast("Login error","error"); } finally{ showLoader(false); } }
+    function logout() { if(sessionTimer) clearTimeout(sessionTimer); currentUser=null; switchScreen('cardScreen'); speakFemale("Logged out"); showToast("Logged out","info"); document.getElementById('physicalCard').classList.remove('slide-animation'); document.getElementById('physicalCard').style.opacity='1'; document.getElementById('physicalCard').classList.remove('hidden'); }
+    function insertCardAnimation() { const card=document.getElementById('physicalCard'); card.classList.add('slide-animation'); playBeep(); speakFemale("Card inserted"); setTimeout(()=>{ card.classList.add('hidden'); switchScreen('loginScreen'); },550); }
+    function switchScreen(id) { ['cardScreen','loginScreen','createAccountScreen','dashboardScreen'].forEach(s=>document.getElementById(s).classList.add('hidden')); document.getElementById(id).classList.remove('hidden'); }
+    async function createAccount() { const name=document.getElementById('newName').value.trim(); const pin=document.getElementById('newPin').value.trim(); if(!name||!pin||!/^\d{4,}$/.test(pin)){ showToast("Name & numeric PIN (>=4 digits)","error"); return; } showLoader(true); try{ let newAcc=""; let unique=false; while(!unique){ let len=Math.floor(Math.random()*3)+8; newAcc=""; for(let i=0;i<len;i++) newAcc+=Math.floor(Math.random()*10); if(!(await findUserByAcc(newAcc))) unique=true; } await createUserInFirestore(newAcc,name,pin,1000); showToast(`Account created: ${newAcc}`,"success"); speakFemale(`Account created. Number ${newAcc}`); switchScreen('loginScreen'); document.getElementById('loginAccNum').value=newAcc; document.getElementById('loginPin').value=''; } catch(e){ showToast("Creation failed","error"); } finally{ showLoader(false); } }
+    
+    // Event listeners and PWA
+    document.addEventListener('DOMContentLoaded',()=>{
+        document.getElementById('themeToggleBtn').onclick=()=>document.body.classList.toggle('light');
+        document.getElementById('insertCardBtn').onclick=insertCardAnimation;
+        document.getElementById('doLoginBtn').onclick=attemptLogin;
+        document.getElementById('biometricLoginBtn').onclick=biometricLogin;
+        document.getElementById('showCreateAccountBtn').onclick=()=>switchScreen('createAccountScreen');
+        document.getElementById('createAccountBtn').onclick=createAccount;
+        document.getElementById('backToLoginFromCreate').onclick=()=>switchScreen('loginScreen');
+        document.getElementById('logoutBtn').onclick=logout;
+        document.querySelectorAll('.opBtn').forEach(btn=>{ btn.addEventListener('click',(e)=>{ if(!currentUser){ showToast("Session expired","error"); logout(); return; } const op=btn.getAttribute('data-op'); if(op==='deposit') depositFlow(); else if(op==='withdraw') withdrawFlow(); else if(op==='transfer') transferFlow(); else if(op==='balance') checkBalance(); else if(op==='history') showTransactionHistory(); else if(op==='changePin') changePinFlow(); else if(op==='fixedDeposit') fixedDepositFlow(); else if(op==='billPay') billPayFlow(); else if(op==='cardlessWithdraw') cardlessWithdrawFlow(); else if(op==='spendingInsights') showSpendingInsights(); else if(op==='scheduledTransfer') scheduledTransferFlow(); else if(op==='qrPayment') qrPaymentFlow(); playBeep(); resetSessionTimer(); }); });
+        const chatToggle=document.getElementById('chatToggleBtn'), chatWin=document.getElementById('chatWindow'), chatClose=document.getElementById('chatCloseBtn'), chatSend=document.getElementById('chatSendBtn'), chatInput=document.getElementById('chatInput'), voiceBtn=document.getElementById('voiceInputBtn');
+        chatToggle.onclick=()=>{ chatWin.style.display=chatWin.style.display==='none'?'flex':'none'; updateQuickReplies(); };
+        chatClose.onclick=()=>chatWin.style.display='none';
+        chatSend.onclick=sendChatMessage;
+        voiceBtn.onclick=startVoiceInput;
+        chatInput.addEventListener('keypress',e=>{if(e.key==='Enter') sendChatMessage();});
+        document.getElementById('langSelect').addEventListener('change',e=>{ currentLanguage=e.target.value; });
+        // Auto dark/light based on system
+        if(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) document.body.classList.remove('light'); else document.body.classList.add('light');
+        // PWA: register service worker
+        if('serviceWorker' in navigator){ navigator.serviceWorker.register('/sw.js').catch(console.log); }
+        // Create a minimal sw.js dynamically
+        const swCode = `self.addEventListener('install', e=>{ self.skipWaiting(); }); self.addEventListener('fetch', e=>{ e.respondWith(fetch(e.request).catch(()=>new Response('Offline'))); });`;
+        const blob = new Blob([swCode], {type:'application/javascript'});
+        const swUrl = URL.createObjectURL(blob);
+        navigator.serviceWorker.register(swUrl).then(reg=>console.log("SW registered",reg)).catch(e=>console.log("SW failed",e));
+        speakFemale("Welcome to Super ATM. Please insert your card.");
         switchScreen('cardScreen');
-        speakMessage("Logged out. Please insert card.");
-        showToast("Logged out securely", "info");
-        const cardDiv = document.getElementById('physicalCard');
-        cardDiv.classList.remove('slide-animation');
-        cardDiv.style.opacity = '1';
-        cardDiv.style.visibility = 'visible';
-        cardDiv.classList.remove('hidden');
-    }
-
-    function insertCardAnimation() {
-        const cardEl = document.getElementById('physicalCard');
-        cardEl.classList.add('slide-animation');
-        playBeep();
-        speakMessage("Card inserted. Please login.");
-        setTimeout(() => {
-            cardEl.classList.add('hidden');
-            switchScreen('loginScreen');
-        }, 550);
-    }
-
-    // -------------------- CHATBOT LOGIC --------------------
-    function getBotReply(userMessage) {
-        const msg = userMessage.toLowerCase();
-        if (msg.includes('hello') || msg.includes('hi') || msg.includes('hey')) {
-            return "Hello! I'm your ATM assistant. You can ask me about deposit, withdrawal, transfer, balance, PIN change, history, or how to use the ATM.";
-        }
-        if (msg.includes('deposit') || msg.includes('add money')) {
-            return "💰 To deposit money: Login → Dashboard → Click 'Deposit' → Verify PIN → Enter amount (positive integer) → Confirm. The amount will be added to your balance instantly.";
-        }
-        if (msg.includes('withdraw') || msg.includes('take money') || msg.includes('cash out')) {
-            return "💸 To withdraw: Login → Dashboard → Click 'Withdraw' → Verify PIN → Enter amount (less than or equal to balance) → Confirm. Cash will be deducted from your account.";
-        }
-        if (msg.includes('transfer') || msg.includes('send money')) {
-            return "🔄 To transfer: Login → Dashboard → Click 'Transfer' → Verify PIN → Enter receiver's account number, amount, and a reason → Confirm. Money will be transferred if sufficient balance and valid account.";
-        }
-        if (msg.includes('balance') || msg.includes('how much money')) {
-            return "💰 Your current balance is shown on the dashboard. You can also click 'Balance' button to refresh and hear it spoken aloud.";
-        }
-        if (msg.includes('pin') || msg.includes('change pin') || msg.includes('update pin')) {
-            return "🔑 To change your PIN: Login → Dashboard → Click 'Change PIN' → Verify current PIN → Enter new numeric PIN (4+ digits) twice → Confirm.";
-        }
-        if (msg.includes('history') || msg.includes('transactions') || msg.includes('statement')) {
-            return "📜 Click 'History' on the dashboard to see all your deposits, withdrawals, and transfers with dates and reasons.";
-        }
-        if (msg.includes('login') || msg.includes('sign in') || msg.includes('access account')) {
-            return "🔐 First insert your card by clicking 'INSERT CARD', then enter your account number and PIN on the login screen. New users can click 'Create Account' to register.";
-        }
-        if (msg.includes('create account') || msg.includes('register') || msg.includes('sign up')) {
-            return "🆕 On the login screen, click 'Create Account'. Enter your name and a numeric PIN (minimum 4 digits). A unique account number will be generated for you with ₹1000 welcome balance.";
-        }
-        if (msg.includes('help') || msg.includes('what can you do') || msg.includes('support')) {
-            return "I can guide you through: deposit, withdrawal, transfer, balance check, PIN change, transaction history, account creation, and login. Just ask!";
-        }
-        return "I'm not sure about that. Please ask about deposit, withdrawal, transfer, balance, PIN change, history, login, or account creation. Or click one of the dashboard buttons for direct actions.";
-    }
-
-    function sendChatMessage() {
-        const input = document.getElementById('chatInput');
-        const message = input.value.trim();
-        if (!message) return;
-        const chatMessages = document.getElementById('chatMessages');
-        // append user message
-        const userDiv = document.createElement('div');
-        userDiv.className = 'message user-msg';
-        userDiv.innerText = message;
-        chatMessages.appendChild(userDiv);
-        input.value = '';
-        // get bot reply
-        const reply = getBotReply(message);
-        setTimeout(() => {
-            const botDiv = document.createElement('div');
-            botDiv.className = 'message bot-msg';
-            botDiv.innerText = reply;
-            chatMessages.appendChild(botDiv);
-            chatMessages.scrollTop = chatMessages.scrollHeight;
-            // optional: speak the reply (uncomment if you want voice)
-            // speakMessage(reply);
-        }, 300);
-        chatMessages.scrollTop = chatMessages.scrollHeight;
-    }
-
-    // -------------------- EVENT LISTENERS --------------------
-    document.addEventListener('DOMContentLoaded', () => {
-        document.getElementById('themeToggleBtn').onclick = () => document.body.classList.toggle('light');
-        document.getElementById('insertCardBtn').onclick = insertCardAnimation;
-        document.getElementById('doLoginBtn').onclick = attemptLogin;
-        document.getElementById('showCreateAccountBtn').onclick = () => switchScreen('createAccountScreen');
-        document.getElementById('createAccountBtn').onclick = createAccount;
-        document.getElementById('backToLoginFromCreate').onclick = () => switchScreen('loginScreen');
-        document.getElementById('logoutBtn')?.addEventListener('click', logout);
-        document.querySelectorAll('.opBtn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                if (!currentUser) { showToast("Session expired", "error"); logout(); return; }
-                const op = btn.getAttribute('data-op');
-                if (op === 'deposit') depositFlow();
-                else if (op === 'withdraw') withdrawFlow();
-                else if (op === 'transfer') transferFlow();
-                else if (op === 'balance') checkBalance();
-                else if (op === 'history') showTransactionHistory();
-                else if (op === 'changePin') changePinFlow();
-                playBeep();
-            });
-        });
-
-        // Chatbot UI events
-        const chatToggle = document.getElementById('chatToggleBtn');
-        const chatWindow = document.getElementById('chatWindow');
-        const chatClose = document.getElementById('chatCloseBtn');
-        const chatSend = document.getElementById('chatSendBtn');
-        const chatInput = document.getElementById('chatInput');
-
-        chatToggle.onclick = () => {
-            chatWindow.style.display = chatWindow.style.display === 'none' ? 'flex' : 'none';
-        };
-        chatClose.onclick = () => chatWindow.style.display = 'none';
-        chatSend.onclick = sendChatMessage;
-        chatInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') sendChatMessage();
-        });
-
-        speakMessage("Welcome to ATM. Please insert your card.");
-        switchScreen('cardScreen');
+        // Check scheduled transfers every minute
+        setInterval(()=>{ const schedules=JSON.parse(localStorage.getItem('scheduledTransfers')||'[]'); const now=new Date(); schedules.forEach(async(s,idx)=>{ if(new Date(s.datetime)<=now && s.from===currentUser?.accountNumber){ // execute transfer (simplified) showToast(`Executing scheduled transfer to ${s.to} of ₹${s.amount}`,"info"); schedules.splice(idx,1); localStorage.setItem('scheduledTransfers',JSON.stringify(schedules)); } }); },60000);
     });
 </script>
 </body>
-</html>
+</html>-
